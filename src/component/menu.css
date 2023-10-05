@@ -1,0 +1,95 @@
+#back-circle {
+  margin: 55px 0 0 50px;
+  width: 890px;
+  height: 890px;
+  border-radius: 890px;
+  background: #FFEBCC;
+  position: relative;
+}
+
+#circle1 {
+  width: 747.948px;
+  height: 747.948px;
+  border-radius: 747.948px;
+  border: 1px solid #C8C8C8;
+  position: absolute;
+  top: 71.03px;
+  left: 71.03px;
+}
+
+#circle2 {
+  width: 645.033px;
+  height: 645.033px;
+  border-radius: 645.033px;
+  border: 1px solid #C8C8C8;
+  position: absolute;
+  top: 121.76px;
+  left: 71.03px;
+}
+
+#salad {
+  width: 645px;
+  height: 645px;
+  filter: drop-shadow(2px 12px 33px rgba(0, 0, 0, 0.50));
+  position: absolute;
+  top: 122px;
+  left: 18px;
+}
+
+#broccoli {
+  width: 125px;
+height: 124px;
+filter: drop-shadow(0px 95px 6px rgba(0, 0, 0, 0.15));
+position: absolute;
+top: -25px;
+right: 247px;
+}
+
+.container {
+  position: absolute;
+  top: 195px;
+  right:-94px;
+  display: flex;
+  flex-direction: column;
+  gap: 61px 0;
+}
+
+.menu-box {
+  display: block;
+  position: relative;
+  width: 255px;
+  height: 79px;
+  border-radius: 50px;
+  background: #FFF;
+  box-shadow: 3px 4px 15px 2px rgba(0, 0, 0, 0.25);
+  text-decoration: none;
+}
+
+.image-box {
+  position: absolute;
+  top: 11px;
+  left: 16px;
+  width: 57px;
+  height: 57px;
+  border-radius: 70%;
+  overflow: hidden;
+}
+
+.image-box > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.menu-box > p {
+  position: absolute;
+  top: 19px;
+  left: 90px;
+  color: #000000;
+  text-align: center;
+  font-family: Noto Sans KR;
+  font-size: 28px;
+  font-style: normal;
+  font-weight: 500;
+  margin: 0;
+}
