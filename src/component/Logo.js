@@ -1,33 +1,36 @@
 import logo from '../img/logo.png';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 
 const LogoBox = styled.div`
   display: flex;
-
+  
   img {
-    width: 71px;
-    height: 65px;
-    flex-shrink: 0;
+    width: 46px;
+    height: 42px;
   }
-
   p {
     color: #F3B04D;
     font-family: Modak;
-    font-size: 47px;
-    font-style: normal;
+    font-size: 35px;
     font-weight: 400;
-    line-height: normal;
-    margin: 6px 0 0 8px;
-  }  
-
+    margin: 6px 0 0 4px;
+  }
   span {
     color: #8B9F2A;
-    font-family: Modak;
-    font-size: 47px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: normal;
   }
+
+  ${(props) =>
+    props.home &&
+    css`
+      img {
+        width: 71px;
+        height: 65px;
+      }
+      p {
+        font-size: 47px;
+        margin: 6px 0 0 8px;
+      }
+    `}
 `
 
 function Logo() {

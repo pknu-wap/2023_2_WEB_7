@@ -219,7 +219,6 @@ function UserInfo() {
     };
 
     try {
-      console.log(data);
       const response=await fetch('/your-server-endpoint', {
         method: 'POST',
         body: JSON.stringify(data),

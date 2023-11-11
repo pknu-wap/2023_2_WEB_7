@@ -57,54 +57,39 @@ const Title = styled.h2`
   font-weight: 800;
   margin-left: -12px;
 `
-const BoxContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  margin-top: 80px;
-  font-family: Noto Sans KR;
-  font-size: 20px;
-  font-weight: 400;
-`
-const ClickBox = styled.div`
-  border: 1px solid #B0B0B0;
-  border-radius: 12px;
-  width: 80%;
-  text-align: center;
-  padding: 10px 0;
-  background-color: ${(props) => (props.selected ? '#F3B04D' : '#FFFFFF')};
-  color: ${(props) => (props.selected ? '#FFFFFF' : '#000000')};
-  cursor: pointer;
+const TargetWeight = styled.div`
+  margin-top: 50px;
+  input {
+    padding: 17px 25px;
+    background-color: #FFFFFF;
+    border-radius: 12px;
+    color: #6A3900;
+    font-family: Noto Sans KR;
+    font-size: 18px;
+    font-weight: 300;
+    overflow: auto;
+    width: 80%;
+    height: 60px;
+    border: 1px solid #000000;
+  }
+  input:focus {
+    outline: none;
+  }
 `
 
 function Goals() {
-  const [selectedBox, setSelectedBox] = useState('');
+  const [targetWeight, setTargetWeight] = useState('');
   const navigate = useNavigate();
 
-  const clickBoxesOptions = [
-    { id: '증량', label: '체중 증량'},
-    { id: '감량', label: '체중 감량'},
-    { id: '유지', label: '체중 유지'},
-  ];
-
-  const handleBoxClick = (selected, id) => {
-    if (selected) {
-      setSelectedBox('');
-    } else {
-      setSelectedBox(id);
-    }
-  };
-
   const handleNextClick = async() => {
+    if (!targetWeight) {
+      alert('목표를 입력해주세요.');
+      return;
+    }
     try {
-      console.log(selectedBox);
-      if (!selectedBox) {
-        alert('목표를 선택해주세요.');
-        return;
-      }
       const response = await fetch('/your-server-endpoint', {
         method: 'POST',
-        body: JSON.stringify(selectedBox),
+        body: JSON.stringify(targetWeight),
         headers: {
           'Content-type': 'application/json',
         },
@@ -125,16 +110,14 @@ function Goals() {
       <Container>
         <Title>Choose your goal!</Title>
         잇플리에게 당신의 목표를 알려주세요! (4/4)
-        <BoxContainer>
-          {clickBoxesOptions.map((box) => (
-            <ClickBox
-              key={box.id}
-              id={box.id}
-              selected={selectedBox === box.id}
-              onClick={() => handleBoxClick(selectedBox === box.id, box.id)}
-            >{box.label}</ClickBox>  
-          ))}
-        </BoxContainer>
+        <TargetWeight>
+          <input
+            type="number"
+            value={targetWeight}
+            onChange={(e) => setTargetWeight(e.target.value)}
+            placeholder="목표 몸무게를 입력해주세요."
+          />
+        </TargetWeight>
         <Link to="/join3">이전</Link>
         <button onClick={handleNextClick}>가입하기</button>
       </Container>

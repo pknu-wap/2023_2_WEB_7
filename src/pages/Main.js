@@ -61,7 +61,7 @@ function Main() {
   return (
     <Body>
       <LeftBox>
-        <Logo />
+        <Logo home/>
         <Container>
           <Content>
             <h1><span>잇플리</span>와 함께 본인에게 맞는<br/>식단으로 건강한 관리를<br/>시작하세요!</h1>

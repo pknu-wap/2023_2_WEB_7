@@ -20,38 +20,45 @@ const Click = styled.div`
 
 const Container = styled.div`
   display: inline-block;
+  
+  fieldset {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    border: 0 none;
+    margin: 0;
+    padding: 0;
+  }
+  input {
+    padding: 14px 75px 14px 40px;
+    background-color: #FFFFFF;
+    border-radius: 20px;
+    color: #6A3900;
+    font-family: Noto Sans KR;
+    font-size: 22px;
+    font-weight: 400;
+    overflow: auto;
+    width: 1120px;
+    height: 60px;
+  }
+  svg {
+    color: #6A3900;
+    width: 33.025px;
+    height: 33px;
+  }
 
   ${(props) =>
       props.home &&
       css`
-        display: inline-block;
-
-        fieldset {
-          display: flex;
-          justify-content: center;
-          position: relative;
-          border: 0 none;
-          margin: 0;
-          padding: 0;
-        }
         input {
           padding: 18px 65px 18px 35px;
-          background-color: #FFFFFF;
           border-radius: 50px;
-          color: #6A3900;
-          font-family: Noto Sans KR;
           font-size: 20px;
-          font-style: normal;
           font-weight: 500;
-          overflow: auto;
           width: 388px;
           height: 59px;
         }
         svg {
-          // position: absolute;
-          // top: 15px;
-          // right: 22px;
-          color: #6A3900;
           width: 34.17px;
           height: 30px;
         }
