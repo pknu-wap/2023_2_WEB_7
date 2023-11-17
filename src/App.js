@@ -3,8 +3,6 @@ import Mypage from './pages/Mypage';
 import Recipe from './pages/Recipe';
 import Search from './pages/Search';
 import Refrigerator from './pages/Refrigerator';
-import Mypage from './pages/Mypage';
-import Refrigerator from './pages/Refrigerator';
 import Report from './pages/Report';
 import Main from './pages/Main';
 import Login from './pages/Login';
