@@ -219,7 +219,7 @@ function UserInfo() {
     };
 
     try {
-      const response=await fetch('/join', {
+      const response=await fetch('http://3.112.14.157:5000/user/join', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: {

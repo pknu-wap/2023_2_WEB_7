@@ -43,7 +43,7 @@ function Mypage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/mypage');
+        const response = await fetch('http://3.112.14.157:5000/user/mypage');
         if (response.ok) {
           const data = await response.json();
           setUserData(data);
