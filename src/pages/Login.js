@@ -129,7 +129,7 @@ function Login() {
     if (!usernameError&&!passwordError) {
       setUsernameError('\t');
       setPasswordError('\t');
-      fetch('/your-server-endpoint', {
+      fetch('/login', {
         method: 'POST',
         body: JSON.stringify({username, password}),
         headers: {

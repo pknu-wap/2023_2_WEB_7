@@ -56,7 +56,7 @@ function RecipeBox({ recipeUrl, recipeName, recipeId }) {
 
   return (
     <Container>
-      <FoodImg imageUrl={imageUrl}/>
+      {/* <FoodImg imageUrl={imageUrl}/> */}
       <FoodName>{recipeName}</FoodName>
       <ButtonBox>
         <ReadMore onClick={handleReadMoreCick}>자세히 보기</ReadMore>

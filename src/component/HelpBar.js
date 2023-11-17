@@ -46,20 +46,28 @@ const Stats = styled.div`
 function HelpBar() {
   const [chartData, setChartData] = useState(null);
   const [userData, setUserData] = useState({
-    name: '',
-    consumedkcal: 0,
-    remainingkcal: 0,
-    dailyCalories: 0,
+    userName: '',
+    todayCal: '',
+    basalMetabolic: '',
+    morningCal: '',
+    lunchCal: '',
+    dinnerCal: '',
+    weight: '',
+    targetWeight: '',
   });
 
   useEffect(() => {
     fetchDataFromServer()
       .then(data => {
         setUserData({
-          name: data.name,
-          consumedkcal: data.consumedkcal,
-          remainingkcal: data.remainingkcal,
-          dailyCalories: data.dailyCalories,
+          userName: data.username,
+          todayCal: data.todayCal,
+          basalMetabolic: data.basalMetabolic,
+          morningCal: data.morningCal,
+          lunchCal: data.lunchCal,
+          dinnerCal: data.dinnerCal,
+          weight: data.weight,
+          targetWeight: data.targetWeight,
         });
         setChartData({
           labels: ['아침', '점심', '저녁'],
@@ -71,7 +79,7 @@ function HelpBar() {
               borderWidth: 1,
               hoverBackgroundColor: 'rgba(75,192,192,0.6)',
               hoverBorderColor: 'rgba(75,192,192,1)',
-              data: [data.breakfast],
+              data: [data.morningCal],
             },
             {
               label: '점심',
@@ -80,7 +88,7 @@ function HelpBar() {
               borderWidth: 1,
               hoverBackgroundColor: 'rgba(255, 205, 86, 0.6)',
               hoverBorderColor: 'rgba(255, 205, 86, 1)',
-              data: [data.lunch],
+              data: [data.lunchCal],
             },
             {
               label: '저녁',
@@ -89,7 +97,7 @@ function HelpBar() {
               borderWidth: 1,
               hoverBackgroundColor: 'rgba(255,99,132,0.6)',
               hoverBorderColor: 'rgba(255,99,132,1)',
-              data: [data.dinner],
+              data: [data.dinnerCal],
             },
           ],
         });
@@ -110,14 +118,29 @@ function HelpBar() {
     }
   };
 
+  const weightDifference = userData.targetWeight - userData.weight;
+  let action = '유지';
+  if (weightDifference > 0) {
+    action = '증량';
+  } else if (weightDifference < 0) {
+    action = '감량';
+  };
+
+  let recommendCalories = userData.basalMetabolism;
+  if (action === '증량') {
+    recommendCalories += 500;
+  } else if (action === '감량') {
+    recommendCalories -= 500;
+  };
+
   return (
     <Container>
       <h2><Logo/></h2>
       <TextBox>
         <div>
-          <h1><span>{userData.name}</span>님,</h1>
-          <h3>오늘 {userData.consumedkcal}kcal 섭취했어요!</h3>
-          <h5>남은 칼로리는 {userData.remainingkcal}kcal입니다.</h5>
+          <h1><span>{userData.userName}</span>님,</h1>
+          <h3>오늘 {userData.todayCal}kcal 섭취했어요!</h3>
+          <h5>남은 칼로리는 {recommendCalories - userData.todayCal}kcal입니다.</h5>
         </div>
       </TextBox>
       <Stats>
@@ -127,7 +150,7 @@ function HelpBar() {
             options={{
               scales: {
                 x: {beginAtZero: true},
-                y: {beginAtZero: true, max: userData.dailyCalories / 3},
+                y: {beginAtZero: true, max: userData.recommendCalories / 3},
               },
             }}
           />

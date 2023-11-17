@@ -16,51 +16,100 @@ const Content = styled.div`
   margin-left: 476px;
 `
 const SearchContainer = styled.div`
-  margin: 142px 0 0 160px;
+  margin: 142px 0 0 130px;
 `
 const Recommend = styled.div`
 `
 const Text = styled.div`
+  margin: 60px 0 0 130px;
+
+  h1 {
+    color: #000000;
+    font-family: Noto Sans KR;
+    font-size: 38px;
+    font-weight: 400;
+  }
+  span {
+    font-weight: 700;
+  }
+  p {
+    margin-top: 30px;
+    color: #000;
+    font-family: Noto Sans KR;
+    font-size: 18px;
+    font-weight: 400;
+  }
+`
+const Line = styled.div`
+  border: 1px solid #F3B04D;
+  margin: 8px 175px 13px 120px;
+`
+const RecipeGrid = styled.div`
+  display: grid;
+  padding:
+  grid-template-columns: repeat(4, 1fr);
 `
 
 function Search() {
   const { query } = useParams();
   const [searchData, setSearchData] = useState({
-    //받아올 데이터
+    recommend: [],
+    recipes: [],
   });
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(`/api/search/${foodName}`);
+    fetchDataFromServer()
+      .then(data => {
+        setSearchData({
+          recommend: data[0],
+          recipes: data[1],
+        });
+      })
+      .catch(error => {
+        console.error('데이터를 불러오는데 실패했습니다.', error);
+      });
+  }, [query]);
 
-        if (response.ok) {
-          const data = await response.json();
-          setSearchData(data);
-        } else {
-          console.error('서버 응답 실패');
-        }
-      } catch (error) {
-        console.error('데이터 가져오기 실패', error);
-      }
-    };
+  const fetchDataFromServer = async () => {
+    try {
+      const response = await fetch(`/api/search/${query}`);
+      const data = await response.json();
 
-    fetchData();
-  }, [foodName]);
+      return data;
+    } catch (error) {
+      throw new Error('데이터를 불러오는데 실패했습니다.');
+    }
+  };
 
   return (
     <Body>
       <HelpBar/>
       <Content>
-        <MenuBar showSearchBar={false}/>
+        <MenuBar search showSearchBar={false}/>
         <SearchContainer>
           <SearchBar/>
-          <Recommend/>
+          <Recommend>
+            {searchData.recommend.map((keyword) => (
+              <li key={keyword}>{keyword}</li>
+            ))}
+          </Recommend>
         </SearchContainer>
         <Text>
-          <h1>{`'${query}'에 대한 레시피`}</h1>
+          <h1><span>{`'${query}'`}</span>에 대한 레시피</h1>
+          <p>평균적으로 000Kcal 입니다.</p>
+          {/* <p>평균적으로 {averageCal}kcal 입니다.</p> */}
         </Text>
-        <RecipeBox/>
+        <Line/>
+        <RecipeGrid>
+          {searchData.recipes.map((recipe) => (
+            <RecipeBox
+              key={recipe.recipeNumber}
+              recipeUrl={recipe.imageUrl}
+              recipeName={recipe.recipeName}
+              recipeId={recipe.recipeNumber}
+            />
+          ))}
+        </RecipeGrid>
       </Content>
     </Body>
   );

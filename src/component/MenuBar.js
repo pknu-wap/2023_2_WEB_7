@@ -13,7 +13,7 @@ const Container = styled.div`
   ${(props) =>
       props.search &&
       css`
-        right: 100px;
+        right: 180px;
       `}
 `
 const StyledNavLink = styled(NavLink)`

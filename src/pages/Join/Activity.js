@@ -103,7 +103,7 @@ function Activity() {
         alert('활동량을 선택해주세요.');
         return; 
       }
-      const response = await fetch('/your-server-endpoint', {
+      const response = await fetch('/join', {
         method: 'POST',
         body: JSON.stringify(selectedBox),
         headers: {

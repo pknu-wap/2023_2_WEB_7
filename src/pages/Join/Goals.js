@@ -87,7 +87,7 @@ function Goals() {
       return;
     }
     try {
-      const response = await fetch('/your-server-endpoint', {
+      const response = await fetch('/join', {
         method: 'POST',
         body: JSON.stringify(targetWeight),
         headers: {

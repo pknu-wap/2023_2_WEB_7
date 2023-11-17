@@ -139,7 +139,7 @@ function IDPW() {
       console.log(username);
       setUsernameError('\t');
       setPasswordError('\t');
-      fetch('/your-server-endpoint', {
+      fetch('/join', {
         method: 'POST',
         body: JSON.stringify({username, password}),
         headers: {
@@ -152,9 +152,6 @@ function IDPW() {
             navigate('/join2');
           } else {
             console.log('서버 요청 실패');
-            alert('가입된 회원정보가 없습니다.');
-            setUsername('');
-            setPassword('');
           }
         })
         .catch((error) => {
