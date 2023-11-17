@@ -138,7 +138,7 @@ function IDPW() {
     if (!idError&&!passwordError) {
       setidError('\t');
       setPasswordError('\t');
-      fetch('api/join', {
+      fetch('/api/join', {
         method: 'POST',
         body: JSON.stringify({id, password}),
         headers: {
