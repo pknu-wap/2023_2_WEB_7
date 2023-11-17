@@ -136,10 +136,9 @@ function IDPW() {
 
   useEffect(() => {
     if (!idError&&!passwordError) {
-      console.log(id);
       setidError('\t');
       setPasswordError('\t');
-      fetch('/join', {
+      fetch('api/join', {
         method: 'POST',
         body: JSON.stringify({id, password}),
         headers: {
