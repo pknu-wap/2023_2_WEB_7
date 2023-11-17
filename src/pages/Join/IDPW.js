@@ -123,10 +123,10 @@ const Question = styled(Link)`
 `
 
 function IDPW() {
-  const [username, setUsername] = useState('');
+  const [id, setid] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [usernameError, setUsernameError] = useState('\t');
+  const [idError, setidError] = useState('\t');
   const [passwordError, setPasswordError] = useState('\t');
   const navigate = useNavigate();
 
@@ -135,13 +135,13 @@ function IDPW() {
   };
 
   useEffect(() => {
-    if (!usernameError&&!passwordError) {
-      console.log(username);
-      setUsernameError('\t');
+    if (!idError&&!passwordError) {
+      console.log(id);
+      setidError('\t');
       setPasswordError('\t');
       fetch('/join', {
         method: 'POST',
-        body: JSON.stringify({username, password}),
+        body: JSON.stringify({id, password}),
         headers: {
           'Content-type': 'application/json',
         },
@@ -158,14 +158,14 @@ function IDPW() {
           console.error('오류 발생');
         });
     }
-  }, [username, password, usernameError, passwordError, navigate]);
+  }, [id, password, idError, passwordError, navigate]);
 
   const handleNextClick = () => {
-    if (username.length < 5 || !/^(?=.*[a-zA-Z])[\w]+$/.test(username)) {
-      setUsernameError('아이디는 5자 이상, 영어로 작성해야 합니다.');
-      setUsername('');
+    if (id.length < 5 || !/^(?=.*[a-zA-Z])[\w]+$/.test(id)) {
+      setidError('아이디는 5자 이상, 영어로 작성해야 합니다.');
+      setid('');
     } else {
-      setUsernameError('');
+      setidError('');
     };
     if (
       password.length < 8 || password.length > 12 || !/^(?=.*[a-zA-Z])(?=.*[$@$!%*?&#])/.test(password)
@@ -186,11 +186,11 @@ function IDPW() {
           <p>아이디</p>
           <input
             type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={id}
+            onChange={(e) => setid(e.target.value)}
             placeholder="5자 이상 작성해주세요."
           />
-          {usernameError && <span>{usernameError}</span>}
+          {idError && <span>{idError}</span>}
         </ID>
         <PassWord>
           <p>비밀번호</p>
