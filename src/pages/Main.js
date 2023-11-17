@@ -8,7 +8,7 @@ const Body = styled.div`
   margin: 0;
   background-color: #FFFDFA;
   width: 100%;
-  height: 100%;
+  height: 100vh;
   display: flex;
 `
 const LeftBox = styled.div`

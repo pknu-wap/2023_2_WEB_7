@@ -1,7 +1,7 @@
 import LoginBackground from "../../component/LoginBackground";
 import styled from "styled-components";
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 
 const Container = styled.div`

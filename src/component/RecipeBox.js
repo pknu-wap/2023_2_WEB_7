@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Container = styled.div`
   width: 265px;
@@ -47,14 +47,19 @@ const Registration = styled(Link)`
   text-decoration: none;
 `
 
-function RecipeBox() {
+function RecipeBox({ recipeUrl, recipeName, recipeId }) {
+  const navigate = useNavigate();
+
+  const handleReadMoreCick = () => {
+    navigate(`/recipe/${recipeId}`);
+  };
 
   return (
     <Container>
-      <FoodImg/>
-      <FoodName></FoodName>
+      <FoodImg imageUrl={imageUrl}/>
+      <FoodName>{recipeName}</FoodName>
       <ButtonBox>
-        <ReadMore to="#!">자세히 보기</ReadMore>
+        <ReadMore onClick={handleReadMoreCick}>자세히 보기</ReadMore>
         <Registration to="#!">등록</Registration>
       </ButtonBox>
     </Container>

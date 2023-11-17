@@ -1,7 +1,7 @@
 import { BiSearch } from 'react-icons/bi';
 import styled, { css } from 'styled-components';
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 
 const Click = styled.div`
   width: 50px;
@@ -16,6 +16,13 @@ const Click = styled.div`
   &:hover {
     cursor: pointer;
   }
+
+  ${(props) => 
+      props.menu &&
+      css`
+        top: 9px;
+        right: 8px;
+      `}
 `
 
 const Container = styled.div`
@@ -61,6 +68,22 @@ const Container = styled.div`
         svg {
           width: 34.17px;
           height: 30px;
+          
+        }
+      `}
+
+  ${(props) =>
+      props.menu &&
+      css`
+        input {
+          padding-left: 20px;
+          font-size: 16px;
+          width: 220px;
+          height: 42px;
+        }  
+        svg {
+          width: 26px;
+          height: 25.985px;
         }
       `}
 `
@@ -105,7 +128,7 @@ function SearchBar({...props}) {
           onKeyUp={handleEnterPress}
           placeholder="레시피 검색"
         />
-        <Click onClick={handleSVGClick}>
+        <Click {...props} onClick={handleSVGClick}>
           <BiSearch onClick={handleSVGClick}/>
         </Click>
       </fieldset>

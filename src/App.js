@@ -1,4 +1,11 @@
 import './App.css';
+import Mypage from './pages/Mypage';
+import Recipe from './pages/Recipe';
+import Search from './pages/Search';
+import Refrigerator from './pages/Refrigerator';
+import Mypage from './pages/Mypage';
+import Refrigerator from './pages/Refrigerator';
+import Report from './pages/Report';
 import Main from './pages/Main';
 import Login from './pages/Login';
 import IDPW from './pages/Join/IDPW';
@@ -17,6 +24,12 @@ function App() {
       <Route path="/join2" element={<UserInfo/>} />
       <Route path="/join3" element={<Activity/>} />
       <Route path="/join4" element={<Goals/>} />
+      <Route path="/refrigerator" element={<Refrigerator/>} />
+      <Route path="/planer" element={<Planer/>} />
+      <Route path="/report" element={<Report/>} />
+      <Route path="/mypage" element={<Mypage/>} />
+      <Route path="/search/:query" element={<Search/>} />
+      <Route path="/recipe/:recipeId" element={<Recipe/>} />
     </Routes>
   );
 };

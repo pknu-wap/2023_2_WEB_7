@@ -77,7 +77,7 @@ const ClickBox = styled.div`
   cursor: pointer;
 `
 
-function Activity() {
+function ChActivity() {
   const [selectedBox, setSelectedBox] = useState('');
   const navigate = useNavigate();
 
@@ -124,8 +124,8 @@ function Activity() {
   return (
     <LoginBackground>
       <Container>
-        <Title>Choose your activities!</Title>
-        잇플리에게 당신의 활동량을 알려주세요! (3/4)
+        <Title>Correct your information</Title>
+        아래 입력된 정보로 프로필을 수정합니다. (2/3)
         <BoxContainer>
           {clickBoxesOptions.map((box) => (
             <ClickBox
@@ -143,4 +143,4 @@ function Activity() {
   );
 };
 
-export default Activity;
+export default ChActivity;

@@ -2,7 +2,7 @@ import LoginBackground from '../../component/LoginBackground';
 import styled from 'styled-components';
 import { useState, useEffect } from 'react';
 import { BiShow } from 'react-icons/bi';
-import { useNavigate } from 'react-router';
+import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 
 const Container = styled.div`

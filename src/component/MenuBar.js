@@ -1,12 +1,20 @@
 import { NavLink } from "react-router-dom";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
+import SearchBar from "./SearchBar";
 
 const Container = styled.div`
   display: flex;
   gap: 65px;
+  align-items: center;
   position: absolute;
   top: 64px;
-  right: 270px;
+  right: 330px;
+
+  ${(props) =>
+      props.search &&
+      css`
+        right: 100px;
+      `}
 `
 const StyledNavLink = styled(NavLink)`
   color: #000000;
@@ -20,9 +28,9 @@ const StyledNavLink = styled(NavLink)`
   }
 `
 
-function MenuBar() {
+function MenuBar({showSearchBar = true, ...props}) {
   return (
-    <Container>
+    <Container {...props}>
       <StyledNavLink to="/planner" activeClassName="active">
         식단
       </StyledNavLink>
@@ -35,6 +43,7 @@ function MenuBar() {
       <StyledNavLink to="/mypage" activeClassName="active">
         마이페이지
       </StyledNavLink>
+      {showSearchBar && <SearchBar menu/>}
     </Container>
   );
 };

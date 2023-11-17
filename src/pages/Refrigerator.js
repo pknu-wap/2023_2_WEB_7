@@ -2,7 +2,9 @@ import Logo from "../component/Logo";
 import MenuBar from "../component/MenuBar";
 import styled from "styled-components";
 import { useState } from "react";
+import ReactModal from "react-modal";
 import axios from 'axios';
+import LottieLoading from "../img/LottieLoading";
 
 const Body = styled.div`
   margin: 0;
@@ -176,7 +178,13 @@ const RecipeItem = styled.div`
 `
 const RecipeSearch = styled.button`
 `
+const RecipeLoading = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items:center;
+`
 
+ReactModal.setAppElement('#root');
 
 
 function Refrigerator() {
@@ -184,6 +192,7 @@ function Refrigerator() {
   const [ingredients, setIngredients] = useState([]);
   const [loading, setLoading] = useState(false);
   const [recipes, setRecipes] = useState([]);
+  const [modalIsOpen, setModalIsOpen] = useState(false);
 
   const handleIngredientInputChange = (e) => {
     setIngredientInput(e.target.value);
@@ -202,6 +211,7 @@ function Refrigerator() {
 
   const handleInputComplete = async () => {
     setLoading(true);
+    openModal();
     const messages = [
       { role: 'system', content: 'You are a helpful assistant.'},
       { role: 'user', content: '가지고 있는 재료는' + ingredients.join(', ') + '이고, 이걸로 만들 수 있는 음식 알려줘. 이 재료를 전부 사용할 필요 없고, 일부만 사용한 음식부터 전부 사용한 음식 모두 괜찮아. 대답은 "(음식 이름): (사용한 식재료)" 이렇게 하면 돼. 다른 대답은 하지마. 여기서 사용한 식재료는 내가 알려준 식재료 중에서 사용된 식재료를 말하는거야.'}
@@ -213,41 +223,77 @@ function Refrigerator() {
         Authorization: `Bearer ${api_key}`,
         'Content-Type': 'application/json',
       },
+      timeout: 100000,
     }
 
-    const data = {
-      model: 'text-davinci-003',
+    const gptData = {
+      model: 'gpt-3.5-turbo',
       temperature: 0.5,
       n: 1,
       messages: messages,
     };
     try {
-      const response = await axios.post('https://api.openai.com/v1/chat/completions', data, config);
-      const generatedText = response.data.choices[0].message.content;
-      const recipesDict = extractRecipes(generatedText);
-      setRecipes(recipesDict);
+      const response = await axios.post('https://api.openai.com/v1/chat/completions', gptData, config);
+      const assistantMessage = await response.data.choices[0].message.content.split('\n');
+      console.log(assistantMessage);
+      const recipesArray = extractRecipes(assistantMessage);
+
+      const recipesWithImages = await Promise.all(
+        Object.keys(recipesArray).map(async (food) => {
+          const imageUrl = await fetchKakaoImage(food);
+          return {
+            food,
+            usedIngredients: recipesArray[food],
+            imageUrl,
+          };
+        })
+      );
+
+      setRecipes(recipesArray);;
     } catch(error) {
       console.error('API 호출 실패', error);
     }
     setLoading(false);
+    closeModal();
   };
 
-  // useEffect(() => {
-  //   handleInputComplete();
-  // }, [handleInputComplete]);
+  const fetchKakaoImage = async (food) => {
+    try {
+      const response = await axios.get('https://dapi.kakao.com/v2/search/image', {
+        headers: {
+          Authorization: 'KakaoAK ',
+        },
+        params: {
+          query: food,
+          page: 1,
+          size: 1,
+        },
+      });
+      return response.data.documents[0].image_url;
+    } catch (error) {
+      console.error('Kakao API 호출 실패', error);
+
+      return '';
+    }
+  };
 
   const extractRecipes = (text) => {
-    const recipesDict = {};
-    const regex = /"(.*?)": \[(.*?)\]/g;
+    const recipes = [];
+    const regex = /"\d+\. (.*?): (.*?)"/g;
     let match;
 
     while ((match = regex.exec(text)) !== null) {
       const food = match[1].trim();
       const usedIngredients = match[2].trim().split(', ').map((ingredient) => ingredient.trim());
-
-      recipesDict[food] = usedIngredients;
+      
+      recipes.push({
+        food: food,
+        usedIngredients: usedIngredients,
+      });
     }
-    return recipesDict;
+    console.log(Array.isArray(recipes), recipes);
+    console.log(recipes.length);
+    return recipes;
   }
 
   const sendIngredientsToServer = async (ingredients) => {
@@ -267,6 +313,13 @@ function Refrigerator() {
     } catch(error) {
       console.error('오류 발생', error);
     }
+  };
+
+  const openModal = () => {
+    setModalIsOpen(true);
+  };
+  const closeModal = () => {
+    setModalIsOpen(false);
   };
 
   return (
@@ -299,15 +352,38 @@ function Refrigerator() {
           <InputComplete onClick={handleInputComplete}>입력 완료</InputComplete>
         </IngredientContainer>
       </Ingredient>
+      <ReactModal 
+        isOpen={modalIsOpen}
+        onRequestClose={closeModal}
+        style={{
+          overlay: {
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+          content: {
+            width: '400px',
+            height: '400px',
+            margin: 'auto',
+            display: 'flex',
+            justifiContent: 'center',
+            alignItems: 'center',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          },
+        }}
+        contentLabel="로딩 중"
+      >
+        {loading ? (
+          <RecipeLoading>
+            <LottieLoading/>
+            <p>잇플리가 레시피를 찾고 있어요!<br/>잠시만 기다려주세요.</p>
+          </RecipeLoading>
+        ) : null}
+      </ReactModal>
       <Recipes>
         <p>현재 재료로 만들 수 있는 레시피에요!</p>
-        {loading ? (
-          <p>로딩 중...</p>
-        ) : (
-          <RecipesContainer>
-          {Object.entries(recipes).map(([food, usedIngredients], index) => (
+        <RecipesContainer>
+          {recipes.map(({food, usedIngredients, imageUrl}, index) => (
             <RecipeItem key={index}>
-              <img src="#!" alt="음식 사진"/>
+              <img src={imageUrl} alt="음식 사진"/>
               <section>
                 <h3>{food}</h3>
                 <p>{usedIngredients.join(', ')}</p>
@@ -316,7 +392,6 @@ function Refrigerator() {
             </RecipeItem>
           ))}
         </RecipesContainer>
-        )}
       </Recipes>
     </Body>
   );
