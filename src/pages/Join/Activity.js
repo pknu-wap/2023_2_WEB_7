@@ -103,7 +103,7 @@ function Activity() {
         alert('활동량을 선택해주세요.');
         return; 
       }
-      const response = await fetch('http://3.112.14.157:5000/user/join', {
+      const response = await fetch('api /join', {
         method: 'POST',
         body: JSON.stringify(selectedBox),
         headers: {

@@ -138,7 +138,7 @@ function IDPW() {
     if (!idError&&!passwordError) {
       setidError('\t');
       setPasswordError('\t');
-      fetch('http://3.112.14.157:5000/user/join', {
+      fetch('api /join', {
         method: 'POST',
         body: JSON.stringify({id, password}),
         headers: {

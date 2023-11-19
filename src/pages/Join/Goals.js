@@ -87,7 +87,7 @@ function Goals() {
       return;
     }
     try {
-      const response = await fetch('http://3.112.14.157:5000/user/join', {
+      const response = await fetch('api /join', {
         method: 'POST',
         body: JSON.stringify(targetWeight),
         headers: {
