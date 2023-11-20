@@ -219,7 +219,7 @@ function UserInfo() {
     };
 
     try {
-      const response=await fetch('api /join', {
+      const response=await fetch('/user/join', {
         method: 'POST',
         body: JSON.stringify(data),
         headers: {

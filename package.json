@@ -2,7 +2,7 @@
   "name": "menuprogram",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://3.112.14.157:5000/user",
+  "proxy": "http://3.112.14.157:5000",
   "dependencies": {
     "@lottiefiles/react-lottie-player": "^3.5.3",
     "@testing-library/jest-dom": "^5.17.0",
@@ -12,6 +12,7 @@
     "chart.js": "^4.4.0",
     "classnames": "^2.3.2",
     "date-fns": "^2.30.0",
+    "http-proxy-middleware": "^2.0.6",
     "lottie-react": "^2.4.0",
     "lottie-web": "^5.12.2",
     "openai": "^4.17.4",

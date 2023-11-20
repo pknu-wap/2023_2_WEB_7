@@ -129,7 +129,7 @@ function Login() {
     if (!idError&&!passwordError) {
       setidError('\t');
       setPasswordError('\t');
-      fetch('api /login', {
+      fetch('/user/login', {
         method: 'POST',
         body: JSON.stringify({id, password}),
         headers: {
