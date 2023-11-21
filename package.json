@@ -2,7 +2,6 @@
   "name": "menuprogram",
   "version": "0.1.0",
   "private": true,
-  "proxy": "http://3.112.14.157:5000",
   "dependencies": {
     "@lottiefiles/react-lottie-player": "^3.5.3",
     "@testing-library/jest-dom": "^5.17.0",
