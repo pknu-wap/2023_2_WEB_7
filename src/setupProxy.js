@@ -5,7 +5,7 @@ module.exports = function(app){
         "/user",
       createProxyMiddleware( {
         target: 'http://3.112.14.157:80',
-        changeOrigin: true
+        changeOrigin: true,
       })
     )
     
