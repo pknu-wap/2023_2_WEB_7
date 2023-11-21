@@ -90,14 +90,19 @@ function Goals() {
     }
     setInfo('join3', { targetWeight });
     const userData = {
-      join1: state.join1,
-      join2: state.join2,
-      join3: state.join3,
-      join4: { targetWeight },
+      id: state.join1.id,
+      pw: state.join1.password,
+      name: state.join2.name,
+      age: state.join2.age,
+      weight: state.join2.weight,
+      height: state.join2.height,
+      gender: state.join2.gender,
+      excercise: state.join3.activity,
+      goal_weight: targetWeight,
     };
 
     try {
-      const response = await fetch('http://127.0.0.1:5000/user/join', {
+      const response = await fetch('http://3.112.14.157/user/join', {
         method: 'POST',
         body: JSON.stringify(userData),
         headers: {
@@ -106,7 +111,7 @@ function Goals() {
       });
 
       if (response.ok) {
-        navigate('/new-page.html');
+        navigate('/');
       } else {
         console.log('서버 요청 실패');
       }
