@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { BiShow } from 'react-icons/bi';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
+import { useSignupContext } from '../../component/MyContext';
 
 const Container = styled.div`
   width: 100%;
@@ -128,6 +129,7 @@ function IDPW() {
   const [showPassword, setShowPassword] = useState(false);
   const [idError, setidError] = useState('\t');
   const [passwordError, setPasswordError] = useState('\t');
+  const { setInfo } = useSignupContext();
   const navigate = useNavigate();
 
   const togglePasswordVisibility = () => {
@@ -138,24 +140,7 @@ function IDPW() {
     if (!idError&&!passwordError) {
       setidError('\t');
       setPasswordError('\t');
-      fetch('/user/join', {
-        method: 'POST',
-        body: JSON.stringify({id, password}),
-        headers: {
-          'Content-type': 'application/json',
-        },
-      })
-        
-        .then((response) => {
-          if (response.ok) {
-            navigate('/join2');
-          } else {
-            console.log('서버 요청 실패');
-          }
-        })
-        .catch((error) => {
-          console.error('오류 발생');
-        });
+      navigate('/join2');
     }
   }, [id, password, idError, passwordError, navigate]);
 
@@ -173,7 +158,9 @@ function IDPW() {
       setPassword('');
     } else {
       setPasswordError('');
-    };
+    }
+
+    setInfo('join1', { id, password });
   };
 
   return (

@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useSignupContext } from "../../component/MyContext";
 
 const Container = styled.div`
   width: 100%;
@@ -78,7 +79,8 @@ const ClickBox = styled.div`
 `
 
 function Activity() {
-  const [selectedBox, setSelectedBox] = useState('');
+  const { state, setInfo } = useSignupContext();
+  const [selectedBox, setSelectedBox] = useState(state.join3.activity || '');
   const navigate = useNavigate();
 
   const clickBoxesOptions = [
@@ -97,28 +99,14 @@ function Activity() {
     }
   };
 
-  const handleNextClick = async() => {
-    try {
-      if (!selectedBox) {
-        alert('활동량을 선택해주세요.');
-        return; 
-      }
-      const response = await fetch('/user/join', {
-        method: 'POST',
-        body: JSON.stringify(selectedBox),
-        headers: {
-          'Content-type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        navigate('/join4');
-      } else {
-        console.log('서버 요청 실패');
-      }
-    } catch(error) {
-      console.error('오류 발생', error);
+  const handleNextClick = () => {
+    if (!selectedBox) {
+      alert('활동량을 선택해주세요.');
+      return; 
     }
+    const activity = selectedBox;
+    setInfo('join3', { activity });
+    navigate('/join4');
   };
 
   return (

@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useSignupContext } from "../../component/MyContext";
 
 const Container = styled.div`
   width: 100%;
@@ -193,48 +194,26 @@ const Gender = styled.div`
 `
 
 function UserInfo() {
-  const [name, setName] = useState('');
-  const [age, setAge] = useState('');
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
-  const [gender, setGender] = useState(1);
+  const { state, setInfo } = useSignupContext();
+  const [name, setName] = useState(state.join2.name || '');
+  const [age, setAge] = useState(state.join2.age || '');
+  const [weight, setWeight] = useState(state.join2.weight || '');
+  const [height, setHeight] = useState(state.join2.height || '');
+  const [gender, setGender] = useState(state.join2.gender || 1);
   const navigate = useNavigate();
 
   const handleGenderChange = (e) => {
     setGender(parseInt(e.target.value));
   };
 
-  const handleNextClick = async() => {
+  const handleNextClick = () => {
     if (!name || !age || !weight || !height) {
       alert('모든 필드를 입력하세요.');
       return;
     }
 
-    const data={
-      name,
-      age,
-      gender,
-      weight,
-      height,
-    };
-
-    try {
-      const response=await fetch('/user/join', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        headers: {
-          'Content-type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        navigate('/next-page.html');
-      } else {
-        console.log('서버 요청 실패');
-      }
-    } catch(error) {
-      console.error('오류 발생', error);
-    }
+    setInfo('join2', { name, age, weight, height, gender });
+    navigate('/join3');
   };
 
   return (

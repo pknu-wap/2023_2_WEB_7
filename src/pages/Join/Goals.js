@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
+import { useSignupContext } from "../../component/MyContext";
 
 const Container = styled.div`
   width: 100%;
@@ -78,7 +79,8 @@ const TargetWeight = styled.div`
 `
 
 function Goals() {
-  const [targetWeight, setTargetWeight] = useState('');
+  const { state, setInfo } = useSignupContext();
+  const [targetWeight, setTargetWeight] = useState(state.join4.targetWeight || '');
   const navigate = useNavigate();
 
   const handleNextClick = async() => {
@@ -86,10 +88,18 @@ function Goals() {
       alert('목표를 입력해주세요.');
       return;
     }
+    setInfo('join3', { targetWeight });
+    const userData = {
+      join1: state.join1,
+      join2: state.join2,
+      join3: state.join3,
+      join4: { targetWeight },
+    };
+
     try {
-      const response = await fetch('/user/join', {
+      const response = await fetch('http://127.0.0.1:5000/user/join', {
         method: 'POST',
-        body: JSON.stringify(targetWeight),
+        body: JSON.stringify(userData),
         headers: {
           'Content-type': 'application/json',
         },
