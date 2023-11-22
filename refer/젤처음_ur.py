@@ -35,7 +35,7 @@ def save():
         (%s,%s,%s,%s,%s,%s,%s, SYSDATE()) 
                    """
     
-    cursor.execute(sql, (id,pw,name,birth,int(height),int(weight),gender))
+    cursor.execute(sql, (id,pw,name,birth,height,weight,gender))
     db.commit()
     db.close()
             

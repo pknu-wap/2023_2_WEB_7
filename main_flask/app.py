@@ -1,8 +1,12 @@
 from flask import Flask,render_template
-import pymysql
+
+from flask_cors import CORS
 from user_route import user_bp
 
 app = Flask(__name__)
+
+CORS(app, resources={r'/*': {'origins': '*'}})
+
 
 #blue print 등록, app.py에서 관리할 수 있도록 user 관련 라우터 당겨오기
 app.register_blueprint(user_bp)
