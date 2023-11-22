@@ -4,9 +4,9 @@ const SignupContext = createContext();
 
 const initialState = {
   join1: { id: '', password: ''},
-  join2: {name: '', age: '', weight: '', height: '', gender: ''},
-  join3: {activity: ''},
-  join4: {targetWeight: ''},
+  join2: {name: '', age: 0, weight: 0, height: 0, gender: 0},
+  join3: {activity: 0},
+  join4: {targetWeight: 0},
 };
 
 const SET_INFO = 'SET_INFO';

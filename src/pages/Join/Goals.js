@@ -93,16 +93,16 @@ function Goals() {
       id: state.join1.id,
       pw: state.join1.password,
       name: state.join2.name,
-      age: state.join2.age,
-      weight: state.join2.weight,
-      height: state.join2.height,
-      gender: state.join2.gender,
-      excercise: state.join3.activity,
-      goal_weight: targetWeight,
+      age: Number(state.join2.age),
+      weight: parseFloat(state.join2.weight),
+      height: parseFloat(state.join2.height),
+      gender: Number(state.join2.gender),
+      excercise: Number(state.join3.activity),
+      goal_weight: parseFloat(targetWeight),
     };
-
+    console.log(userData);
     try {
-      const response = await fetch('/user/join', {
+      const response = await fetch('/join', {
         method: 'POST',
         body: JSON.stringify(userData),
         headers: {
