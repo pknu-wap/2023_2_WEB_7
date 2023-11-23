@@ -152,9 +152,13 @@ def recipe_info(number):
 def get_helpbar_info(user_id, date):
     cur = conn.cursor()
     
-    helpbar_sql = "SELECT name, active_meta FROM HELPBAR WHERE id = %s"
-    cur.execute(helpbar_sql, (user_id,))
-    helpbar_result = cur.fetchone()
+    helpbar_name_sql = "SELECT name FROM USER WHERE id = %s"
+    cur.execute(helpbar_name_sql, (user_id,))
+    helpbar_name = cur.fetchone()
+
+    helpbar_meta_sql = "SELECT active_meta FROM MYPAGE WHERE id = %s"
+    cur.execute(helpbar_meta_sql, (user_id,))
+    helpbar_meta = cur.fetchone()
 
     morningKcal_sql = "SELECT SUM(food_kcal) AS Morkcal FROM PLANNER WHERE id = %s AND date = %s AND meal_when = 1"
     lunchKcal_sql = "SELECT SUM(food_kcal) AS Lunkcal FROM PLANNER WHERE id = %s AND date = %s AND meal_when = 2"
@@ -174,9 +178,9 @@ def get_helpbar_info(user_id, date):
     user_weight = cur.fetchone()
 
     return {
-        "name": helpbar_result[0],
+        "name": helpbar_name,
         "total_calories": morning_kcal + lunch_kcal + dinner_kcal,
-        "basal_meta": helpbar_result[1],
+        "basal_meta": helpbar_meta,
         "calories_per_meal": {
             "breakfast": morning_kcal,
             "lunch": lunch_kcal,
@@ -218,13 +222,11 @@ def get_user_info(user_id):
     
 #------------------------------------------------------------
 
-def update_user_weight(user_id, user_weight): 
+def update_user_weight(user_id, date, user_weight): 
     cur = conn.cursor()
-    today = datetime.now().strftime('%Y-%m-%d') # 안되면 date 받아오기
-    
     
     user_weight_sql = "INSERT INTO REPORT (id, date, weight) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE weight = %s"
-    cur.execute(user_weight_sql, (user_id, today, user_weight, user_weight))
+    cur.execute(user_weight_sql, (user_id, date, user_weight, user_weight))
 
     conn.commit()
 
@@ -328,7 +330,7 @@ def get_week_month_report(user_id, start_date, end_date):
         "goal_weight": user_data[2]
     }
 
-    return week_month_report
+    return week_month_report ## 어떻게 주차, 월별 데이터 반환할지 로직 필요.
 
 
 
@@ -336,26 +338,26 @@ def save_planner(user_id, date, meal_when, food_name, food_carbo, food_protein, 
     cur = conn.cursor()
 
     save_planner_sql = """
-        INSERT INTO PLANNER (date, meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        WHERE id = %s
+        INSERT INTO PLANNER (id, date, meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
     """
-    cur.execute(save_planner_sql, (date, meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal, user_id))
-    save_planner_data = cur.fetchone()
+    cur.execute(save_planner_sql, (user_id, date, meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal))
+    # save_planner_data = cur.fetchone()
 
-    save_planner_data = {
-        "date" : save_planner_data[0],
-        "meal_when" : save_planner_data[1],
-        "food_name" : save_planner_data[2],
-        "food_carbo" : save_planner_data[3],
-        "food_protein" : save_planner_data[4],
-        "food_fat" : save_planner_data[5],
-        "food_kcal" : save_planner_data[6]
-    }
+    # save_planner_data = {
+    #     "date" : save_planner_data[0],
+    #     "meal_when" : save_planner_data[1],
+    #     "food_name" : save_planner_data[2],
+    #     "food_carbo" : save_planner_data[3],
+    #     "food_protein" : save_planner_data[4],
+    #     "food_fat" : save_planner_data[5],
+    #     "food_kcal" : save_planner_data[6]
+    # }
 
-    return save_planner_data
+    # return save_planner_data
+    return None
     
-
+## 플래너에 추가하지 않고, 조회하면 오류뜰려나,,
 
 
 
@@ -418,7 +420,7 @@ def search_food():
         return jsonify({"error": "Please enter a food name."}), 400
 
 
-@app.route('/planner', methods=['GET'])
+@app.route('/planner', methods=['POST'])
 def save_food_planner():
     action = request.json.get('action')
     user_id = request.json.get('id')
@@ -430,7 +432,7 @@ def save_food_planner():
     food_fat = request.json.get('food_fat')
     food_kcal = request.json.get('food_kcal')
 
-    if not user_id or not date or not meal_when:
+    if not user_id or not date or not meal_when or not food_name:
         return jsonify({"error": "Missing user_id, date or meal_when"}), 400
     
     if action == 'save':
@@ -440,10 +442,10 @@ def save_food_planner():
     else:
         return jsonify({"error": "Invalid action"}), 400
 
-
-    return jsonify({
-        "save_planner": save_food
-    })
+    return jsonify({"message": "Action fetched successfully"}), 200
+    # return jsonify({
+    #     "save_planner": save_food
+    # })
 
 
 
@@ -451,14 +453,12 @@ def save_food_planner():
 @app.route('/report', methods=['GET'])
 def report():
     user_id = request.json.get('id')
-    date_str = request.json.get('date')  # 'YYYY-MM-DD' 형식
+    date = request.json.get('date')  # 'YYYY-MM-DD' 형식
 
-    if not user_id or not date_str:
+    if not user_id or not date:
         return jsonify({"error": "Missing user_id or date parameter."}), 400
 
-    date = datetime.strptime(date_str, '%Y-%m-%d')
-
-    daily_report = get_daily_report(user_id, date_str)
+    daily_report = get_daily_report(user_id, date)
     monthly_ranges, weekly_ranges = get_monthly_weekly_ranges(date)
     monthly_reports = [get_week_month_report(user_id, *month_range) for month_range in monthly_ranges]
     weekly_reports = [get_week_month_report(user_id, *week_range) for week_range in weekly_ranges]
