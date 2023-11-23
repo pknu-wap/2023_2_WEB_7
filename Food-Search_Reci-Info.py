@@ -44,11 +44,10 @@ sql = """
     INSERT INTO user
     (id, pw, name, age, height, weight , gender, excercise, goal_weight, created_time)
     VALUES
-    (%s, %s, %s, %s, %s, %s, %s, %s, %s, SYSDATE());
+    (%s, %s, %s, %s, %s, %s, %s, %s, %s, SYSDATE())
 """
 
-cursor.execute(sql, (id, hashed_pw, name, age, int(height), rounded_weight, gender, int(excercise), int(goal_weight), excercise
-, )) 
+cursor.execute(sql, (id, hashed_pw, name, age, int(height), int(weight), gender, int(excercise), int(goal_weight), excercise, )) 
 db.commit()
 
 ## 회원정보 수정 logic "alter 구문!!"
@@ -153,13 +152,13 @@ def recipe_info(number):
 def get_helpbar_info(user_id, date):
     cur = conn.cursor()
     
-    helpbar_sql = "SELECT name, active_meta FROM HELPBAR WHERE id = %s;"
+    helpbar_sql = "SELECT name, active_meta FROM HELPBAR WHERE id = %s"
     cur.execute(helpbar_sql, (user_id,))
     helpbar_result = cur.fetchone()
 
-    morningKcal_sql = "SELECT SUM(food_kcal) AS Morkcal FROM PLANNER WHERE id = %s AND date = %s AND meal_when = 1;"
-    lunchKcal_sql = "SELECT SUM(food_kcal) AS Lunkcal FROM PLANNER WHERE id = %s AND date = %s AND meal_when = 2;"
-    dinnerKcal_sql = "SELECT SUM(food_kcal) AS Dinkcal FROM PLANNER WHERE id = %s AND date = %s AND meal_when = 3;"
+    morningKcal_sql = "SELECT SUM(food_kcal) AS Morkcal FROM PLANNER WHERE id = %s AND date = %s AND meal_when = 1"
+    lunchKcal_sql = "SELECT SUM(food_kcal) AS Lunkcal FROM PLANNER WHERE id = %s AND date = %s AND meal_when = 2"
+    dinnerKcal_sql = "SELECT SUM(food_kcal) AS Dinkcal FROM PLANNER WHERE id = %s AND date = %s AND meal_when = 3"
 
     cur.execute(morningKcal_sql, (user_id, date))
     morning_kcal = cur.fetchone()[0] or 0
@@ -170,7 +169,7 @@ def get_helpbar_info(user_id, date):
     cur.execute(dinnerKcal_sql, (user_id, date))
     dinner_kcal = cur.fetchone()[0] or 0
     
-    user_weight_sql = "SELECT weight, goal_weight FROM USER WHERE id = %s;"
+    user_weight_sql = "SELECT weight, goal_weight FROM USER WHERE id = %s"
     cur.execute(user_weight_sql, (user_id,))
     user_weight = cur.fetchone()
 
@@ -193,13 +192,13 @@ def get_helpbar_info(user_id, date):
 def get_user_info(user_id):
     cur = conn.cursor()
 
-    user_info_sql = "SELECT name, age, weight, height, gender, exercise, goal_weight FROM USER WHERE id = %s;"
+    user_info_sql = "SELECT name, age, weight, height, gender, exercise, goal_weight FROM USER WHERE id = %s"
     cur.execute(user_info_sql, (user_id,))
     user_info = cur.fetchone()
 
     if user_info:
         name, age, weight, height, gender, exercise, goal_weight = user_info
-        basal_meta_sql = "SELECT active_meta FROM MYPAGE WHERE id = %s;" ## mypage 계산 안되면 바로 파이썬 코드에서 선언
+        basal_meta_sql = "SELECT active_meta FROM MYPAGE WHERE id = %s" ## mypage 계산 안되면 바로 파이썬 코드에서 선언
         cur.execute(basal_meta_sql, (user_id,))
         basal_meta_result = cur.fetchone()
         basal_meta = basal_meta_result[0] if basal_meta_result else None
@@ -224,7 +223,7 @@ def update_user_weight(user_id, user_weight):
     today = datetime.now().strftime('%Y-%m-%d') # 안되면 date 받아오기
     
     
-    user_weight_sql = "INSERT INTO REPORT (id, date, weight) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE weight = %s;"
+    user_weight_sql = "INSERT INTO REPORT (id, date, weight) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE weight = %s"
     cur.execute(user_weight_sql, (user_id, today, user_weight, user_weight))
 
     conn.commit()
@@ -261,7 +260,7 @@ def get_daily_report(user_id, date):
         SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
         SUM(food_fat) AS fat, SUM(food_kcal) AS calories 
         FROM PLANNER
-        WHERE id = %s AND date = %s;
+        WHERE id = %s AND date = %s
     """
     cur.execute(nutri_daily_sql, (user_id, date))
     daily_data = cur.fetchone()
@@ -270,7 +269,7 @@ def get_daily_report(user_id, date):
         SELECT name, active_meta
         FROM USER
         JOIN MYPAGE ON USER.id = MYPAGE.id
-        WHERE USER.id = %s;
+        WHERE USER.id = %s
     """
     cur.execute(name_meta_sql, (user_id,))
     user_data = cur.fetchone()
@@ -293,7 +292,7 @@ def get_week_month_report(user_id, start_date, end_date):
         SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
         SUM(food_fat) AS fat, SUM(food_kcal) AS calories
         FROM PLANNER
-        WHERE id = %s AND date BETWEEN %s AND %s;
+        WHERE id = %s AND date BETWEEN %s AND %s
     """
     cur.execute(nutri_WM_sql, (user_id, start_date, end_date))
     WM_data = cur.fetchone()
@@ -302,7 +301,7 @@ def get_week_month_report(user_id, start_date, end_date):
     WM_weight_sql = """
         SELECT weight
         FROM REPORT
-        WHERE id = %s AND date = %s;
+        WHERE id = %s AND date = %s
     """
     cur.execute(WM_weight_sql, (user_id,  end_date))
     weight_data = cur.fetchone()
@@ -312,7 +311,7 @@ def get_week_month_report(user_id, start_date, end_date):
         SELECT name, active_meta, goal_weight
         FROM USER
         JOIN MYPAGE ON USER.id = MYPAGE.id
-        WHERE USER.id = %s;
+        WHERE USER.id = %s
     """
     cur.execute(name_meta_weight_sql, (user_id,))
     user_data = cur.fetchone()
@@ -339,7 +338,7 @@ def save_planner(user_id, date, meal_when, food_name, food_carbo, food_protein, 
     save_planner_sql = """
         INSERT INTO PLANNER (date, meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
-        WHERE id = %s;
+        WHERE id = %s
     """
     cur.execute(save_planner_sql, (date, meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal, user_id))
     save_planner_data = cur.fetchone()
@@ -365,7 +364,7 @@ def delete_planner(user_id, date, meal_when, food_name):
 
     delete_planner_sql = """
         DELETE FROM PLANNER
-        WHERE id = %s AND date = %s AND meal_when = %s AND food_name = %s;
+        WHERE id = %s AND date = %s AND meal_when = %s AND food_name = %s
     """
     cur.execute(delete_planner_sql,(user_id, date, meal_when, food_name))
 
@@ -374,19 +373,13 @@ def delete_planner(user_id, date, meal_when, food_name):
 
 ##---------------------------------------------------------------------------
 
-
-@app.route('/')
-def index():
-    url = http://www.eatply.online
-    return redirect(url)
-
-
 @app.route('/search/<string:food_name>', methods=['GET'])
 def search_food_helpbar_info(food_name):
+    food_name = request.args.get('food_name')
     search_data = food_info(food_name)
 
-    user_id = request.args.get('user_id')
-    date = request.args.get('date')
+    user_id = request.json.get('id')
+    date = request.json.get('date')
 
     helpbar_data = None
     if user_id and date:
@@ -399,11 +392,12 @@ def search_food_helpbar_info(food_name):
 
 
 @app.route('/recipe/<int:number>', methods=['GET'])
-def get_recipe_helpbar_info(number):
+def get_recipe_helpbar_info():
+    number = request.args.get(number)
     recipe_data = recipe_info(number)
 
-    user_id = request.args.get('user_id')
-    date = request.args.get('date')
+    user_id = request.json.get('id')
+    date = request.json.get('date')
 
     helpbar_data = None
     if user_id and date:
@@ -415,9 +409,9 @@ def get_recipe_helpbar_info(number):
     })
 
 
-@app.route('/refri', methods=['GET'])
+@app.route('/refri/<string:food_name>', methods=['GET'])
 def search_food():
-    food_name = request.form.get('food_name') ## 애매모호.. 무러봐ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ
+    food_name = request.args.get('food_name') ## 애매모호.. 무러봐ㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏㅏ
     if food_name:
         return jsonify(food_info(food_name))
     else:
@@ -426,15 +420,15 @@ def search_food():
 
 @app.route('/planner', methods=['GET'])
 def save_food_planner():
-    action = request.args.get('action')
-    user_id = request.args.get('user_id')
-    date = request.args.get('date')  
-    meal_when = request.args.get('meal_when')
-    food_name = request.args.get('food_name')
-    food_carbo = request.args.get('food_carbo')
-    food_protein = request.args.get('food_protein')
-    food_fat = request.args.get('food_fat')
-    food_kcal = request.args.get('food_kcal')
+    action = request.json.get('action')
+    user_id = request.json.get('id')
+    date = request.json.get('date')  
+    meal_when = request.json.get('meal_when')
+    food_name = request.json.get('food_name')
+    food_carbo = request.json.get('food_carbo')
+    food_protein = request.json.get('food_protein')
+    food_fat = request.json.get('food_fat')
+    food_kcal = request.json.get('food_kcal')
 
     if not user_id or not date or not meal_when:
         return jsonify({"error": "Missing user_id, date or meal_when"}), 400
@@ -456,8 +450,8 @@ def save_food_planner():
 ####################################################################3
 @app.route('/report', methods=['GET'])
 def report():
-    user_id = request.args.get('user_id')
-    date_str = request.args.get('date')  # 'YYYY-MM-DD' 형식
+    user_id = request.json.get('id')
+    date_str = request.json.get('date')  # 'YYYY-MM-DD' 형식
 
     if not user_id or not date_str:
         return jsonify({"error": "Missing user_id or date parameter."}), 400
@@ -479,8 +473,8 @@ def report():
 
 @app.route('/report', methods=['POST'])
 def save_user_weight():
-    user_id = request.args.get('user_id')
-    user_weight = request.args.get('weight')
+    user_id = request.json.get('id')
+    user_weight = request.json.get('weight')
 
     if not user_id or user_weight is None:
         return jsonify({"error": "Missing user_id or weight"}), 400
@@ -498,7 +492,7 @@ def save_user_weight():
 
 @app.route('/mypage', methods=['GET'])
 def mypage():
-    user_id = request.args.get('user_id')
+    user_id = request.json.get('user_id')
     if not user_id:
         return jsonify({"error": "Missing user_id parameter."}), 400
 
@@ -517,3 +511,8 @@ def mypage():
 #         return jsonify(food_info())
 #     else:
 #         return jsonify({"error": "Missing 'q' parameter."}), 400
+
+# @app.route('/')
+# def index():
+#     url = http://www.eatply.online
+#     return redirect(url)
