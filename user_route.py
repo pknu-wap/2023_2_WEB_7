@@ -417,6 +417,17 @@ def delete_planner(user_id, date, meal_when, food_name):
 
     return None
 
+# planner에 몸무게 저장
+
+
+def update_user_weight(user_id, date, user_weight):
+    cur = db.cursor()
+
+    user_weight_sql = "INSERT INTO REPORT (id, date, weight) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE weight = %s"
+    cur.execute(user_weight_sql, (user_id, date, user_weight, user_weight))
+
+    db.commit()
+
 
 # 플래너 테이블의 내용 표기(get) 및, 저장/삭제 로직 (post)
 @user_bp.route('/planner',  methods=['GET', 'POST'])
@@ -462,11 +473,21 @@ def planner():
         })
 
     elif request.method == 'POST':
-
         data = request.json
-
-        action = request.json.get('action')
+        action = data.get('action')
         user_id = session.get('user_id')
+
+        if action == 'update_weight':
+            user_weight = data.get('weight')
+            if not user_weight:
+                return jsonify({"error": "Missing weight"}), 400
+            try:
+                user_weight = float(user_weight)
+            except ValueError:
+                return jsonify({"error": "Invalid weight format"}), 400
+            update_user_weight(user_id, user_weight)
+            return jsonify({"message": "User weight updated successfully"}), 200
+
         date = data.get('date')  # 먹은 날짜 (예: "2023-11-24")
         meal_when = data.get('meal_when')  # 식사 시간 (아침: 1, 점심: 2, 저녁: 3)
         food_name = data.get('food_name')  # 음식 이름
@@ -474,17 +495,13 @@ def planner():
         food_carbo = data.get('food_carbo')  # 탄수화물
         food_protein = data.get('food_protein')  # 단백질
         food_fat = data.get('food_fat')  # 지방
-
-        if not user_id or not date or not meal_when or not food_name:
-            return jsonify({"error": "Missing id, date, meal_when or food_name"}), 400
-
-        if not user_id or not date or not meal_when or not food_name:
-            return jsonify({"error": "Missing id, date or meal_when"}), 400
+        if not date or not meal_when or not food_name:
+            return jsonify({"error": "Missing date, meal_when or food_name"}), 400
 
         if action == 'save':
             save_planner(user_id, date, meal_when, food_name,
                          food_carbo, food_protein, food_fat, food_kcal)
-        elif (action == 'delete'):
+        elif action == 'delete':
             delete_planner(user_id, date, meal_when, food_name)
         else:
             return jsonify({"error": "Invalid action"}), 400
@@ -496,42 +513,34 @@ def planner():
 # 리포트
 
 
-# 몸무게 저장
-def update_user_weight(user_id, date, user_weight):
-    cur = db.cursor()
-
-    user_weight_sql = "INSERT INTO REPORT (id, date, weight) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE weight = %s"
-    cur.execute(user_weight_sql, (user_id, date, user_weight, user_weight))
-
-    db.commit()
-
 # ------
 
+def get_date_ranges_for_weekly_reports(date):
+    # 해당 월의 첫째 날과 마지막 날을 계산
+    start_of_month = date.replace(day=1)
+    end_of_month = start_of_month + timedelta(days=31)
+    end_of_month = end_of_month.replace(day=1) - timedelta(days=1)
 
-# 받은 날짜 기준으로 당해 년도 모든 주의 시작, 끝 / 모든 월의 시작, 끝을 반환
-# 즉 하루(당일 날짜) 보내주면 그해 년도꺼 계산
-def get_week_range(date):
-    date = datetime.strptime(date, '%Y-%m-%d')
-    start_week = date - timedelta(days=date.weekday())
-    end_week = start_week + timedelta(days=6)
-    return start_week.strftime('%Y-%m-%d'), end_week.strftime('%Y-%m-%d')
+    # 해당 월의 모든 주에 대한 시작과 끝 날짜 계산
+    weekly_ranges = []
+    current_date = start_of_month
+    while current_date <= end_of_month:
+        start_week = current_date - timedelta(days=current_date.weekday())
+        end_week = start_week + timedelta(days=6)
+        weekly_ranges.append((start_week, end_week))
+        current_date = end_week + timedelta(days=1)
+
+    return weekly_ranges
 
 
-def get_month_range(date):
-    date = datetime.strptime(date, '%Y-%m-%d')
-    start_month = date.replace(day=1)
-    end_month = date.replace(day=1) + timedelta(days=31)
-    end_month = end_month.replace(day=1) - timedelta(days=1)
-    return start_month.strftime('%Y-%m-%d'), end_month.strftime('%Y-%m-%d')
-
-
-def get_monthly_weekly_ranges(date):
-    year = date.year
-    months = [datetime(year, month, 1) for month in range(1, 13)]
-    monthly_ranges = [(m.strftime('%Y-%m-%d'), (m.replace(day=1) +
-                       timedelta(days=31)).replace(day=1) - timedelta(days=1)) for m in months]
-    weekly_ranges = [get_week_range(m[0]) for m in monthly_ranges]
-    return monthly_ranges, weekly_ranges
+def get_previous_months(date, months=2):
+    # 이전 몇 개월(기본값 2)을 계산
+    monthly_ranges = []
+    for i in range(months + 1):
+        month = (date.month - i - 1) % 12 + 1
+        year = date.year if (date.month - i - 1) >= 0 else date.year - 1
+        monthly_ranges.append(datetime(year, month, 1))
+    return monthly_ranges
 
 
 # -------
@@ -580,10 +589,6 @@ def get_daily_report(user_id, date):
     return daily_report
 
 
-# 각 주, 월에 해당하는 시작, 끝일을 인자로 받아서 각 데이터를 반환하는 함수
-# 따라서 라우트쪽에서 시작 끝일 계산하는 함수를 사용해 모든 주와 모든 월의 시작 끝일을 반환한 후
-# 아래의 함수에 일일이 대입해 이름, 섭취 칼로리 등의 데이터를 반환한다.
-# 받는 데이터의 양이 많지 않을까 우려,,
 def get_week_month_report(user_id, start_date, end_date):
     cur = db.cursor()
 
@@ -637,41 +642,38 @@ def report():
     if not user_id or not date:
         return jsonify({"error": "Missing id or date parameter."}), 400
 
-    daily_report = get_daily_report(user_id, date)
-    monthly_ranges, weekly_ranges = get_monthly_weekly_ranges(date)
-    monthly_reports = [get_week_month_report(
-        user_id, *month_range) for month_range in monthly_ranges]
-    weekly_reports = [get_week_month_report(
-        user_id, *week_range) for week_range in weekly_ranges]
+    # 일간 리포트
+    daily_reports = []
+    for i in range(7):
+        daily_date = date - timedelta(days=i)
+        daily_report = get_daily_report(
+            user_id, daily_date.strftime('%Y-%m-%d'))
+        daily_reports.append(daily_report)
+
+    # 주간 리포트
+    weekly_ranges = get_date_ranges_for_weekly_reports(date)
+    weekly_reports = []
+    for start_date, end_date in weekly_ranges:
+        report = get_week_month_report(user_id, start_date.strftime(
+            '%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+        weekly_reports.append(report)
+
+    # 월간 리포트
+    previous_months = get_previous_months(date)
+    monthly_reports = []
+    for month_date in previous_months:
+        start_month = month_date.strftime('%Y-%m-%d')
+        end_month = (month_date + timedelta(days=31)
+                     ).replace(day=1) - timedelta(days=1)
+        end_month = end_month.strftime('%Y-%m-%d')
+        report = get_week_month_report(user_id, start_month, end_month)
+        monthly_reports.append(report)
 
     return jsonify({
-        "daily_report": daily_report,
-        "all_monthly_reports": monthly_reports,
-        "all_weekly_reports": weekly_reports
+        "daily_reports": daily_reports,
+        "weekly_reports": weekly_reports,
+        "monthly_reports": monthly_reports
     })
-
-
-# user의 몸무게 저장
-@app.route('/report', methods=['POST'])
-def save_user_weight():
-    saving = request.json.get('save')
-    if saving:
-        user_id = session.get('user_id')
-        user_weight = request.json.get('weight')
-
-        if not user_id or user_weight is None:
-            return jsonify({"error": "Missing id or weight"}), 400
-
-        try:
-            user_weight = float(user_weight)
-        except ValueError:
-            return jsonify({"error": "Invalid weight format"}), 400
-
-        update_user_weight(user_id, user_weight)
-
-        return jsonify({"message": "User weight updated successfully"}), 200
-    else:
-        return None
 
 
 # -------------------------------------------------------
