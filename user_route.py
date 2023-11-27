@@ -10,8 +10,7 @@ from db_connector import db
 
 # 1. 날짜 자동추가? 에바 -> 플래너 page 프론트에서 정보 보내주면 그대로 저장 -> YYYY-MM-DD
 # 2. 리포트 양 많은데 어떻게?
-# 3. 냉장고 페이지 따로 정의할거 있는지?
-# 4. render_templete 왜 import 해놓으셨는지?
+# 3. 냉장고 페이지 따로 정의할거 있는지? -> NO
 
 # Flask 앱 초기화 및 bcrypt 초기화
 app = Flask(__name__)
@@ -350,11 +349,12 @@ def search_food_helpbar_info(food_name):
     search_data = food_info(food_name)
 
     user_id = session.get('user_id')
-    date = request.args.get('date')
+    current_date_time = datetime.now()
+    formatted_date = current_date_time.strftime('%Y-%m-%d')
 
     helpbar_data = None
-    if user_id and date:
-        helpbar_data = get_helpbar_info(user_id, date)
+    if user_id:
+        helpbar_data = get_helpbar_info(user_id, formatted_date)
 
     return jsonify({
         "search_info": search_data,
@@ -369,11 +369,12 @@ def get_recipe_helpbar_info():
     recipe_data = recipe_info(number)
 
     user_id = session.get('user_id')
-    date = request.args.get('date')
+    current_date_time = datetime.now()
+    formatted_date = current_date_time.strftime('%Y-%m-%d')
 
     helpbar_data = None
-    if user_id and date:
-        helpbar_data = get_helpbar_info(user_id, date)
+    if user_id:
+        helpbar_data = get_helpbar_info(user_id, formatted_date)
 
     return jsonify({
         "recipe_info": recipe_data,
@@ -417,9 +418,8 @@ def delete_planner(user_id, date, meal_when, food_name):
 
     return None
 
+
 # planner에 몸무게 저장
-
-
 def update_user_weight(user_id, date, user_weight):
     cur = db.cursor()
 
@@ -435,12 +435,10 @@ def planner():
 
     if request.method == 'GET':
         user_id = session.get('user_id')
-        date = request.args.get('date')
+        date = request.args.get('date')  # 얘는 받아온 날에 대한 정보를 반환해야되니, 유지
 
         if not user_id or not date:
             return jsonify({"error": "Missing id or date"}), 400
-
-        helpbar_data = get_helpbar_info(user_id, date)  # 플래너에도 헬프바 필요??
 
         meals_sql = """
         SELECT meal_when, date, food_name, food_carbo, food_protein, food_fat, food_kcal
@@ -451,6 +449,13 @@ def planner():
         cur = db.cursor()
         cur.execute(meals_sql, (user_id, date))
         meals = cur.fetchall()
+
+        current_date_time = datetime.now()
+
+        formatted_date = current_date_time.strftime('%Y-%m-%d')
+
+        helpbar_data = get_helpbar_info(
+            user_id, formatted_date)  # 오늘 날짜에 해당하는 helpbar 정보 반환
 
         meals_data = []
         for meal in meals:
