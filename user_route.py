@@ -74,7 +74,7 @@ def save(id, pw, name, age, height, weight, gender, exercise, goal_weight):
         """
     hashed_pw = bcrypt.generate_password_hash(pw).decode('utf-8')
     cursor.execute(sql, (id, hashed_pw, name, int(age), height,
-                         weight, int(gender), int(exercise), goal_weight, ))
+                   weight, int(gender), int(exercise), goal_weight, ))
     db.commit()
     db.close()
 
@@ -212,8 +212,8 @@ def food_info(name):  # 음식 이름을 매개변수로 받음.
     food_list = []
 
     # 입력된 음식 이름을 사용해서 해당 레시피 사이트에 검색하는 url 생성
-    url = f"https: //www.10000recipe.com/recipe/list.html?q={
-        name}&order=reco&page=1"
+    url = f"""https: //www.10000recipe.com/recipe/list.html?q={
+        name}&order=reco&page=1"""
     response = requests.get(url)  # url로 get 요청
 
     if response.status_code == 200:
