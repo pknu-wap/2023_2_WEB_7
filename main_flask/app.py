@@ -1,9 +1,14 @@
 from flask import Flask,render_template
-
+import secrets
 from flask_cors import CORS
 from user_route import user_bp
+from datetime import timedelta
 
 app = Flask(__name__)
+
+
+app.secret_key = secrets.token_hex(24)  # secret_key 설정
+app.permanent_session_lifetime = timedelta(days=1)
 
 CORS(app, resources={r'/*': {'origins': '*'}})
 

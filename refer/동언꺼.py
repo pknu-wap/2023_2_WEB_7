@@ -406,17 +406,17 @@ def recipe_info(number):
 
 
 # 레시피 검색
-@user_bp.route('/search/<string:food_name>', methods=['GET'])
+@app.route('/search/<string:food_name>', methods=['GET'])
 def search_food_helpbar_info(food_name):
-    
+    food_name = request.args.get('food_name')
     search_data = food_info(food_name)
 
     user_id = session.get('user_id')
-    current_date = datetime.now().strftime('%Y-%m-%d')
+    date = request.args.get('date')
 
     helpbar_data = None
-    if user_id:
-        helpbar_data = get_helpbar_info(user_id, current_date)
+    if user_id and date:
+        helpbar_data = get_helpbar_info(user_id, date)
 
     return jsonify({
         "search_info": search_data,
@@ -425,17 +425,17 @@ def search_food_helpbar_info(food_name):
 
 
 # 레시피 내용
-@user_bp.route('/recipe/<int:number>', methods=['GET'])
+@app.route('/recipe/<int:number>', methods=['GET'])
 def get_recipe_helpbar_info():
     number = request.args.get(number)
     recipe_data = recipe_info(number)
 
     user_id = session.get('user_id')
-    current_date = datetime.now().strftime('%Y-%m-%d')
+    date = request.args.get('date')
 
     helpbar_data = None
-    if user_id :
-        helpbar_data = get_helpbar_info(user_id, current_date)
+    if user_id and date:
+        helpbar_data = get_helpbar_info(user_id, date)
 
     return jsonify({
         "recipe_info": recipe_data,
@@ -583,7 +583,7 @@ def get_week_month_report(user_id, start_date, end_date):
 
 
 # 일, 주, 월간 리포트 필요한 데이터 반환
-@user_bp.route('/report', methods=['GET'])
+@app.route('/report', methods=['GET'])
 def report():
     user_id = session.get('user_id')
     date = request.args.get('date')  # 'YYYY-MM-DD' 형식
@@ -606,7 +606,7 @@ def report():
 
 
 # user의 몸무게 저장
-@user_bp.route('/report', methods=['POST'])
+@app.route('/report', methods=['POST'])
 def save_user_weight():
     saving = request.json.get('save')
     if saving:
