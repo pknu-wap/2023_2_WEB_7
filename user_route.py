@@ -97,7 +97,7 @@ def login():
 
     if result and bcrypt.check_password_hash(result[0], pw):
         session['user_id'] = id
-        return jsonify({' result': 'ok'})
+        return jsonify({'result': 'ok'})
     else:
         return jsonify({'result': 'fail'}), 401
 
@@ -343,7 +343,7 @@ def get_helpbar_info(user_id, date):
 
 
 # 레시피 검색
-@app.route('/search/<string:food_name>', methods=['GET'])
+@user_bp.route('/search/<string:food_name>', methods=['GET'])
 def search_food_helpbar_info(food_name):
     food_name = request.args.get('food_name')
     search_data = food_info(food_name)
@@ -363,7 +363,7 @@ def search_food_helpbar_info(food_name):
 
 
 # 레시피 내용
-@app.route('/recipe/<int:number>', methods=['GET'])
+@user_bp.route('/recipe/<int:number>', methods=['GET'])
 def get_recipe_helpbar_info():
     number = request.args.get(number)
     recipe_data = recipe_info(number)
@@ -639,7 +639,7 @@ def get_week_month_report(user_id, start_date, end_date):
 
 
 # 일, 주, 월간 리포트 필요한 데이터 반환
-@app.route('/report', methods=['GET'])
+@user_bp.route('/report', methods=['GET'])
 def report():
     user_id = session.get('user_id')
     date = request.args.get('date')  # 'YYYY-MM-DD' 형식
@@ -711,7 +711,7 @@ def get_user_info(user_id):
         return None
 
 
-@app.route('/mypage', methods=['GET'])
+@user_bp.route('/mypage', methods=['GET'])
 def mypage():
     user_id = session.get('user_id')
     if not user_id:
