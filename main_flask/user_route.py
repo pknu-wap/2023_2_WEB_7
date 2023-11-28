@@ -31,8 +31,25 @@ user_bp = Blueprint('user', __name__, url_prefix='/user')
        #     return True
    # return False
 
-        
+#id 중복 테스트 
+@user_bp.route('/check', methods = ['POST'])
+def check():
+    
+    data = request.json
+    id = data.get('id')  
+    
+    if not id:
+        return jsonify({'error': 'ID NOT provided'}), 400
 
+    cursor = db.cursor()
+    sql = "SELECT id FROM USER WHERE id = %s"
+    cursor.execute(sql, (id,))
+    result = cursor.fetchone()
+
+    if result:
+        return jsonify({'error': 'ID already exists'}), 409  
+
+    return jsonify({'message': 'ID is available'})
 
 
 # 회원가입
@@ -61,6 +78,25 @@ def save():
     exercise = data.get('excercise')
     goal_weight = data.get('goal_weight')
     
+    if not id or not pw or not name or not age or not height or not weight or not gender or not exercise or not goal_weight:
+        return jsonify({"error": "Invalid user information"}), 400
+    
+    weight_decimal = weight - int(weight)
+    if weight_decimal <= 0.2:
+        weight = int(weight)
+    elif 0.3 <= weight_decimal <= 0.7:
+        weight = int(weight) + 0.5
+    else:
+        weight = int(weight) + 1
+
+    # goal_weight 값 반올림 로직
+    goal_weight_decimal = goal_weight - int(goal_weight)
+    if goal_weight_decimal <= 0.2:
+        goal_weight = int(goal_weight)
+    elif 0.3 <= weight_decimal <= 0.7:
+        goal_weight = int(goal_weight) + 0.5
+    else:
+        goal_weight = int(goal_weight) + 1
     
     
     
@@ -81,6 +117,8 @@ def save():
     session.permanent = True
     session['user_id'] = id
 
+    
+    
     return jsonify({' result' : 'ok'})
 
 
@@ -125,6 +163,43 @@ def logout():
     session.pop('user_id', None)
     return jsonify('Logged out')
 
+#마이페이지수정, 
+@user_bp.route('/edit', methods=['POST'])
+def edit():
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    data = request.json
+    name = data.get('name')
+    age = data.get('age')
+    weight = data.get('weight')
+    height = data.get('height')
+    gender = data.get('gender')
+    exercise = data.get('exercise')
+    goal_weight = data.get('goal_weight')
+
+    
+    if not all([name, age, weight, height, gender, exercise, goal_weight]):
+        return jsonify({'error': 'Missing or invalid input'}), 400
+
+    
+    try:
+        cursor = db.cursor()
+        sql = """
+            UPDATE USER
+            SET name = %s, age = %s, weight = %s, height = %s, 
+                gender = %s, exercise = %s, goal_weight = %s
+            WHERE id = %s
+        """
+        cursor.execute(sql, (name, age, weight, height, gender, exercise, goal_weight, user_id))
+        db.commit()
+
+        return jsonify({'message': 'User information updated successfully'})
+    except Exception as e:
+        db.rollback()
+        return jsonify({'error': str(e)}), 500
 
     
     
@@ -227,11 +302,48 @@ def get_helpbar_info(user_id, date):
 #먹은 날짜랑 시간, 음식이름, 칼로리, 탄단지
 
 
+# planner에 몸무게 저장
+
+def save_planner(user_id, date, meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal):
+    cur = db.cursor()
+
+    save_planner_sql = """
+        INSERT INTO PLANNER (id, date, meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    cur.execute(save_planner_sql, (user_id, date, meal_when, food_name,
+                food_carbo, food_protein, food_fat, food_kcal))
+
+    return None
+
+
+# planner에서 삭제 함수
+def delete_planner(user_id, date, meal_when, food_name):
+    cur = db.cursor()
+
+    delete_planner_sql = """
+        DELETE FROM PLANNER
+        WHERE id = %s AND date = %s AND meal_when = %s AND food_name = %s
+    """
+    cur.execute(delete_planner_sql, (user_id, date, meal_when, food_name))
+
+    return None
+
+
+def update_user_weight(user_id, date, user_weight):
+    cur = db.cursor()
+
+    user_weight_sql = "INSERT INTO REPORT (id, date, weight) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE weight = %s"
+    cur.execute(user_weight_sql, (user_id, date, user_weight, user_weight))
+
+    db.commit()
+
 
 @user_bp.route('/planner',  methods=['GET', 'POST'])
 def planner():
     
     user_id = session.get('user_id')
+    
     if not user_id:
         return jsonify({'error': 'User not logged in'}), 401
     
@@ -276,32 +388,41 @@ def planner():
     
     
         
-    elif request.method =='POST':
-        
+    elif request.method == 'POST':
         data = request.json
-        
+        action = data.get('action')
+        user_id = session.get('user_id')
+
+        if action == 'update_weight':
+            user_weight = data.get('weight')
+            if not user_weight:
+                return jsonify({"error": "Missing weight"}), 400
+            try:
+                user_weight = float(user_weight)
+            except ValueError:
+                return jsonify({"error": "Invalid weight format"}), 400
+            update_user_weight(user_id, user_weight)
+            return jsonify({"message": "User weight updated successfully"}), 200
+
         date = data.get('date')  # 먹은 날짜 (예: "2023-11-24")
         meal_when = data.get('meal_when')  # 식사 시간 (아침: 1, 점심: 2, 저녁: 3)
-        food_name = data.get('food_name') # 음식 이름 
+        food_name = data.get('food_name')  # 음식 이름
         food_kcal = data.get('food_kcal')  # 해당 끼니 칼로리
         food_carbo = data.get('food_carbo')  # 탄수화물
         food_protein = data.get('food_protein')  # 단백질
         food_fat = data.get('food_fat')  # 지방
-        
-        cursor = db.cursor()
-        
-        sql = """
-        INSERT INTO PLANNER 
-        (date, meal_when, food_name, food_kcal, food_carbo, food_protein, food_fat)
-        VALUES
-        (%s ,%s, %s, %s, %s, %s, %s)
-        """
+        if not date or not meal_when or not food_name:
+            return jsonify({"error": "Missing date, meal_when or food_name"}), 400
 
-        
-        cursor.execute(sql, (date, int(meal_when), food_name, food_kcal, food_carbo, food_protein, food_fat))
-        db.commit()
-        
-        return jsonify({"success": "Planner saved successfully"}), 200
+        if action == 'save':
+            save_planner(user_id, date, meal_when, food_name,
+                         food_carbo, food_protein, food_fat, food_kcal)
+        elif action == 'delete':
+            delete_planner(user_id, date, meal_when, food_name)
+        else:
+            return jsonify({"error": "Invalid action"}), 400
+
+        return jsonify({"message": "Action fetched successfully"}), 200
     
     
 
@@ -311,96 +432,116 @@ def planner():
 
 # 레시피 검색 함수
 
-def food_info(name):  # 음식 이름을 매개변수로 받음.
-    food_list = []
+def food_info(name): # 음식이름을 매개변수로 받음. 페이지 수는 10페이지로 고정
+    food_list = []  # 음식 이름과 이미지 저장할 배열 선언
 
     # 입력된 음식 이름을 사용해서 해당 레시피 사이트에 검색하는 url 생성
     url = f"https://www.10000recipe.com/recipe/list.html?q={name}&order=reco&page=1"
-
-    response = requests.get(url)  # url로 get 요청
-
-    if response.status_code == 200:
-        html = response.text
-        soup = BeautifulSoup(html, 'html.parser')
-
-        recommend_boxes = soup.find('ul', class_='tag_cont')
-        food_rec_list = [a.text for a in recommend_boxes.find_all('a')]
-        food_list.append(food_rec_list)
-
-        food_boxes = soup.find_all(attrs={'class': 'common_sp_list_li'})
-        food_item_list = []
-
-        for list in food_boxes:
-            food_img = list.find('img')['src']
-            food_name = list.find(
-                attrs={'class': 'common_sp_caption_tit'}).text
-
-            food_link = list.find('a', class_="common_sp_link")
-            href = food_link.get('href')
-            food_number = href.split('/recipe/')[1]
-
-            food_item = {'food_img': food_img,
-                         'food_name': food_name, 'food_number': food_number}
-            food_item_list.append(food_item)
-
-        food_list.append(food_item_list)
-
-    else:
-        return {"error": f"HTTP response error: {response.status_code}"}
-
-    return {"recommendations": food_list[0], "foods": food_list[1]}
-
-
-# 레시피 내용 함수
-def recipe_info(number):
-    # 입력된 음식 이름을 사용해서 해당 레시피 사이트에 검색하는 url 생성
-    url = f"https: //www.10000recipe.com/recipe/{number}"
-    response = requests.get(url)  # url로 get요청
+    response = requests.get(url) #url로 get요청
 
     # 200(성공)이면 html파싱, 그렇지 않으면 오류메시지 출력
     # 파싱 : 주어진 데이터를 분석해서 원하는 정보 추출
     if response.status_code == 200:
         html = response.text
         soup = BeautifulSoup(html, 'html.parser')
-    else:
+
+        # 입력된 음식 이름과 관련된 추천 검색어 추출
+        recommend_boxes = soup.find('ul', class_='tag_cont')
+        food_rec_list = [a.text for a in recommend_boxes.find_all('a')]
+        food_list.append(food_rec_list)
+
+        # 웹 페이지의 html을 beautifulsoup을 이용해서 파싱
+        food_boxes = soup.find_all(attrs={'class':'common_sp_list_li'})
+        food_item_list = []
+
+        for list in food_boxes:
+            a_tag = list.find('a', class_='common_sp_link')
+    
+            if a_tag:
+                img_tags = a_tag.find_all('img')
+                if img_tags:
+                    if len(img_tags) >= 2:
+                        food_img = img_tags[1]['src']
+                    else:
+                        food_img = img_tags[0]['src']
+                else:
+                    food_img = ""
+            else:
+                food_img = ""
+
+            food_name = list.find(attrs={'class':'common_sp_caption_tit'}).text
+
+            food_link = list.find('a', class_="common_sp_link")
+            href = food_link.get('href')
+            food_number = href.split('/recipe/')[1]
+
+            food_item = {'food_img': food_img, 'food_name': food_name, 'food_number': food_number}
+            food_item_list.append(food_item)
+
+        food_list.append(food_item_list)
+        
+    else : 
         print("HTTP response error :", response.status_code)
         return
+  
+    return food_list
 
-    # 레시피 부가 설명 추출
-    recipe_intro = soup.find('div', id="recipeIntro")
-    intro = list(recipe_intro.stripped_strings)
 
-    # 레시피 정보 추출
-    parent_tag = soup.find(class_="view2_summary_info")
-    child_tags = parent_tag.find_all('span')
-    info_side = [tag.get_text() for tag in child_tags]  # 양, 소요시간, 난이도 정보
+# 레시피 내용 함수
+def recipe_info(number):
+    try:
+    # 입력된 음식 이름을 사용해서 해당 레시피 사이트에 검색하는 url 생성
+        url = f"https://www.10000recipe.com/recipe/{number}"
+        response = requests.get(url)  # url로 get요청
 
-    food_info = soup.find(attrs={'type': 'application/ld+json'})
-    result = json.loads(food_info.text)
-    name = result['name']  # 레시피 이름
-    ingredient = ','.join(result['recipeIngredient'])  # 레시피에 필요한 재료
+        # 200(성공)이면 html파싱, 그렇지 않으면 오류메시지 출력
+        # 파싱 : 주어진 데이터를 분석해서 원하는 정보 추출
+        if response.status_code == 200:
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
+        
+    
+    
+        # 레시피 부가 설명 추출
+            recipe_intro = soup.find('div', id="recipeIntro")
+            intro = list(recipe_intro.stripped_strings)
 
-    # 레시피
-    recipe = [result['recipeInstructions'][i]['text']
-              for i in range(len(result['recipeInstructions']))]
-    for i in range(len(recipe)):
-        recipe[i] = f'{i+1}. ' + recipe[i]
+        # 레시피 정보 추출
+            parent_tag = soup.find(class_="view2_summary_info")
+            child_tags = parent_tag.find_all('span')
+            info_side = [tag.get_text() for tag in child_tags]  # 양, 소요시간, 난이도 정보
 
-    # 레시피 사진
-    recipe_img = [result['recipeInstructions'][i]['image']
-                  for i in range(len(result['recipeInstructions']))]
+            food_info = soup.find(attrs={'type': 'application/ld+json'})
+            result = json.loads(food_info.text)
+            name = result['name']  # 레시피 이름
+            ingredient = ','.join(result['recipeIngredient'])  # 레시피에 필요한 재료
 
-    res = {
-        'name': name,
-        'ingredients': ingredient,
-        'recipe': recipe,
-        'recipe_img': recipe_img,
-        'recipe_intro': intro,
-        'info_side': info_side,
-    }
+        # 레시피
+            recipe = [result['recipeInstructions'][i]['text']
+                    for i in range(len(result['recipeInstructions']))]
+            for i in range(len(recipe)):
+                recipe[i] = f'{i+1}. ' + recipe[i]
 
-    return res
+        # 레시피 사진
+            recipe_img = [result['recipeInstructions'][i]['image']
+                        for i in range(len(result['recipeInstructions']))]
 
+            res = {
+                'name': name,
+                'ingredients': ingredient,
+                'recipe': recipe,
+                'recipe_img': recipe_img,
+                'recipe_intro': intro,
+                'info_side': info_side,
+            }
+
+            return res
+        else:
+            print("HTTP response error :", response.status_code)
+            return
+    except Exception as e :
+        print(f"Error occurred: {e}")
+        return
 
 
 
@@ -427,7 +568,7 @@ def search_food_helpbar_info(food_name):
 # 레시피 내용
 @user_bp.route('/recipe/<int:number>', methods=['GET'])
 def get_recipe_helpbar_info():
-    number = request.args.get(number)
+    number = request.args.get('number')
     recipe_data = recipe_info(number)
 
     user_id = session.get('user_id')
@@ -447,42 +588,39 @@ def get_recipe_helpbar_info():
 # 리포트
 
 
-# 몸무게 저장
-def update_user_weight(user_id, date, user_weight):
-    cur = db.cursor()
 
-    user_weight_sql = "INSERT INTO REPORT (id, date, weight) VALUES (%s, %s, %s) ON DUPLICATE KEY UPDATE weight = %s"
-    cur.execute(user_weight_sql, (user_id, date, user_weight, user_weight))
-
-    db.commit()
 
 # ------
 
 
 # 받은 날짜 기준으로 당해 년도 모든 주의 시작, 끝 / 모든 월의 시작, 끝을 반환
 # 즉 하루(당일 날짜) 보내주면 그해 년도꺼 계산
-def get_week_range(date):
-    date = datetime.strptime(date, '%Y-%m-%d')
-    start_week = date - timedelta(days=date.weekday())
-    end_week = start_week + timedelta(days=6)
-    return start_week.strftime('%Y-%m-%d'), end_week.strftime('%Y-%m-%d')
+def get_date_ranges_for_weekly_reports(date):
+    # 해당 월의 첫째 날과 마지막 날을 계산
+    start_of_month = date.replace(day=1)
+    end_of_month = start_of_month + timedelta(days=31)
+    end_of_month = end_of_month.replace(day=1) - timedelta(days=1)
+
+    # 해당 월의 모든 주에 대한 시작과 끝 날짜 계산
+    weekly_ranges = []
+    current_date = start_of_month
+    while current_date <= end_of_month:
+        start_week = current_date - timedelta(days=current_date.weekday())
+        end_week = start_week + timedelta(days=6)
+        weekly_ranges.append((start_week, end_week))
+        current_date = end_week + timedelta(days=1)
+
+    return weekly_ranges
 
 
-def get_month_range(date):
-    date = datetime.strptime(date, '%Y-%m-%d')
-    start_month = date.replace(day=1)
-    end_month = date.replace(day=1) + timedelta(days=31)
-    end_month = end_month.replace(day=1) - timedelta(days=1)
-    return start_month.strftime('%Y-%m-%d'), end_month.strftime('%Y-%m-%d')
-
-
-def get_monthly_weekly_ranges(date):
-    year = date.year
-    months = [datetime(year, month, 1) for month in range(1, 13)]
-    monthly_ranges = [(m.strftime('%Y-%m-%d'), (m.replace(day=1) +
-                       timedelta(days=31)).replace(day=1) - timedelta(days=1)) for m in months]
-    weekly_ranges = [get_week_range(m[0]) for m in monthly_ranges]
-    return monthly_ranges, weekly_ranges
+def get_previous_months(date, months=2):
+    # 이전 몇 개월(기본값 2)을 계산
+    monthly_ranges = []
+    for i in range(months + 1):
+        month = (date.month - i - 1) % 12 + 1
+        year = date.year if (date.month - i - 1) >= 0 else date.year - 1
+        monthly_ranges.append(datetime(year, month, 1))
+    return monthly_ranges
 
 
 # ----------------------------------------------------------------------------------------------------------
@@ -516,7 +654,7 @@ def get_daily_report(user_id, date):
         FROM REPORT
         WHERE id = %s AND date = %s
     """
-    cur.execute(current_weight_sql, (user_id,))
+    cur.execute(current_weight_sql, (user_id,date)) # date 추가함
     current_data = cur.fetchone()
 
     db.commit()
@@ -586,47 +724,45 @@ def get_week_month_report(user_id, start_date, end_date):
 @user_bp.route('/report', methods=['GET'])
 def report():
     user_id = session.get('user_id')
-    date = request.args.get('date')  # 'YYYY-MM-DD' 형식
-
-    if not user_id or not date:
+    
+    current_date_str = datetime.now().strftime('%Y-%m-%d')
+    current_date = datetime.strptime(current_date_str, '%Y-%m-%d')
+    
+    if not user_id or not current_date:
         return jsonify({"error": "Missing id or date parameter."}), 400
 
-    daily_report = get_daily_report(id, date)
-    monthly_ranges, weekly_ranges = get_monthly_weekly_ranges(date)
-    monthly_reports = [get_week_month_report(
-        user_id, *month_range) for month_range in monthly_ranges]
-    weekly_reports = [get_week_month_report(
-        user_id, *week_range) for week_range in weekly_ranges]
+    # 일간 리포트
+    daily_reports = []
+    for i in range(7):
+        daily_date = current_date - timedelta(days=i)
+        daily_report = get_daily_report(
+            user_id, daily_date.strftime('%Y-%m-%d'))
+        daily_reports.append(daily_report)
+
+    # 주간 리포트
+    weekly_ranges = get_date_ranges_for_weekly_reports(current_date)
+    weekly_reports = []
+    for start_date, end_date in weekly_ranges:
+        report = get_week_month_report(user_id, start_date.strftime(
+            '%Y-%m-%d'), end_date.strftime('%Y-%m-%d'))
+        weekly_reports.append(report)
+
+    # 월간 리포트
+    previous_months = get_previous_months(current_date)
+    monthly_reports = []
+    for month_date in previous_months:
+        start_month = month_date.strftime('%Y-%m-%d')
+        end_month = (month_date + timedelta(days=31)
+                     ).replace(day=1) - timedelta(days=1)
+        end_month = end_month.strftime('%Y-%m-%d')
+        report = get_week_month_report(user_id, start_month, end_month)
+        monthly_reports.append(report)
 
     return jsonify({
-        "daily_report": daily_report,
-        "all_monthly_reports": monthly_reports,
-        "all_weekly_reports": weekly_reports
+        "daily_reports": daily_reports,
+        "weekly_reports": weekly_reports,
+        "monthly_reports": monthly_reports
     })
-
-
-# user의 몸무게 저장
-@user_bp.route('/report', methods=['POST'])
-def save_user_weight():
-    saving = request.json.get('save')
-    if saving:
-        user_id = session.get('user_id')
-        user_weight = request.json.get('weight')
-
-        if not user_id or user_weight is None:
-            return jsonify({"error": "Missing id or weight"}), 400
-
-        try:
-            user_weight = float(user_weight)
-        except ValueError:
-            return jsonify({"error": "Invalid weight format"}), 400
-
-        update_user_weight(user_id, user_weight)
-
-        return jsonify({"message": "User weight updated successfully"}), 200
-    else:
-        return None
-
 
 
 @user_bp.route('/all_users')

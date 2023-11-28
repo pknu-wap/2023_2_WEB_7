@@ -61,6 +61,25 @@ def save():
     exercise = data.get('excercise')
     goal_weight = data.get('goal_weight')
     
+    if not id or not pw or not name or not age or not height or not weight or not gender or not exercise or not goal_weight:
+        return jsonify({"error": "Invalid user information"}), 400
+    
+    weight_decimal = weight - int(weight)
+    if weight_decimal <= 0.2:
+        weight = int(weight)
+    elif 0.3 <= weight_decimal <= 0.7:
+        weight = int(weight) + 0.5
+    else:
+        weight = int(weight) + 1
+
+    # goal_weight 값 반올림 로직
+    goal_weight_decimal = goal_weight - int(goal_weight)
+    if goal_weight_decimal <= 0.2:
+        goal_weight = int(goal_weight)
+    elif 0.3 <= weight_decimal <= 0.7:
+        goal_weight = int(goal_weight) + 0.5
+    else:
+        goal_weight = int(goal_weight) + 1
     
     
     
@@ -81,6 +100,8 @@ def save():
     session.permanent = True
     session['user_id'] = id
 
+    
+    
     return jsonify({' result' : 'ok'})
 
 
@@ -232,6 +253,7 @@ def get_helpbar_info(user_id, date):
 def planner():
     
     user_id = session.get('user_id')
+    
     if not user_id:
         return jsonify({'error': 'User not logged in'}), 401
     
@@ -406,17 +428,17 @@ def recipe_info(number):
 
 
 # 레시피 검색
-@app.route('/search/<string:food_name>', methods=['GET'])
+@user_bp.route('/search/<string:food_name>', methods=['GET'])
 def search_food_helpbar_info(food_name):
-    food_name = request.args.get('food_name')
+    
     search_data = food_info(food_name)
 
     user_id = session.get('user_id')
-    date = request.args.get('date')
+    current_date = datetime.now().strftime('%Y-%m-%d')
 
     helpbar_data = None
-    if user_id and date:
-        helpbar_data = get_helpbar_info(user_id, date)
+    if user_id:
+        helpbar_data = get_helpbar_info(user_id, current_date)
 
     return jsonify({
         "search_info": search_data,
@@ -425,17 +447,17 @@ def search_food_helpbar_info(food_name):
 
 
 # 레시피 내용
-@app.route('/recipe/<int:number>', methods=['GET'])
+@user_bp.route('/recipe/<int:number>', methods=['GET'])
 def get_recipe_helpbar_info():
     number = request.args.get(number)
     recipe_data = recipe_info(number)
 
     user_id = session.get('user_id')
-    date = request.args.get('date')
+    current_date = datetime.now().strftime('%Y-%m-%d')
 
     helpbar_data = None
-    if user_id and date:
-        helpbar_data = get_helpbar_info(user_id, date)
+    if user_id :
+        helpbar_data = get_helpbar_info(user_id, current_date)
 
     return jsonify({
         "recipe_info": recipe_data,
@@ -583,7 +605,7 @@ def get_week_month_report(user_id, start_date, end_date):
 
 
 # 일, 주, 월간 리포트 필요한 데이터 반환
-@app.route('/report', methods=['GET'])
+@user_bp.route('/report', methods=['GET'])
 def report():
     user_id = session.get('user_id')
     date = request.args.get('date')  # 'YYYY-MM-DD' 형식
@@ -606,7 +628,7 @@ def report():
 
 
 # user의 몸무게 저장
-@app.route('/report', methods=['POST'])
+@user_bp.route('/report', methods=['POST'])
 def save_user_weight():
     saving = request.json.get('save')
     if saving:
