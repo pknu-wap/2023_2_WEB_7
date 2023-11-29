@@ -651,10 +651,10 @@ def user_report(user_id):
 @user_bp.route('/report', methods=['GET'])
 def report():
     user_id = session.get('user_id')
-    date = request.args.get('date')  # 'YYYY-MM-DD' 형식
+    date = datetime.now().strftime('%Y-%m-%d')  # 현재 날짜를 기준으로 리포트 갱신되도록 코드 수정
 
-    if not user_id or not date:
-        return jsonify({"error": "Missing id or date parameter."}), 400
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
 
     # 일간 리포트
     daily_reports = []
