@@ -8,7 +8,7 @@ import requests
 from db_connector import db
 
 
-# 1. 날짜 자동추가? 에바 -> 플래너 page 프론트에서 정보 보내주면 그대로 저장 -> YYYY-MM-DD
+# 1. 플래너에서 날짜 자동추가? 에바 -> 플래너 page 프론트에서 정보 보내주면 그대로 저장 -> YYYY-MM-DD
 # 2. 리포트 양 많은데 어떻게?
 # 3. 냉장고 페이지 따로 정의할거 있는지? -> NO
 
@@ -551,91 +551,124 @@ def get_previous_months(date, months=2):
 # -------
 # 일간 리포트 내용반환하는 함수
 def get_daily_report(user_id, date):
-    cur = db.cursor()
+    with db.cursor() as cur:
+        nutri_daily_sql = """
+            SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
+            SUM(food_fat) AS fat, SUM(food_kcal) AS calories 
+            FROM PLANNER
+            WHERE id = %s AND date = %s
+        """
+        cur.execute(nutri_daily_sql, (user_id, date))
+        daily_data = cur.fetchone()
 
-    nutri_daily_sql = """
-        SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
-        SUM(food_fat) AS fat, SUM(food_kcal) AS calories 
-        FROM PLANNER
-        WHERE id = %s AND date = %s
-    """
-    cur.execute(nutri_daily_sql, (user_id, date))
-    daily_data = cur.fetchone()
+        name_sql = """
+            SELECT name
+            FROM USER
+            JOIN MYPAGE ON USER.id = MYPAGE.id
+            WHERE USER.id = %s
+        """
+        cur.execute(name_sql, (user_id,))
+        user_data = cur.fetchone()
 
-    name_meta_sql = """
-        SELECT name, active_meta
-        FROM USER
-        JOIN MYPAGE ON USER.id = MYPAGE.id
-        WHERE USER.id = %s
-    """
-    cur.execute(name_meta_sql, (user_id,))
-    user_data = cur.fetchone()
+        current_weight_sql = """
+            SELECT weight
+            FROM REPORT
+            WHERE id = %s AND date = %s
+        """
+        cur.execute(current_weight_sql, (user_id,))
+        current_data = cur.fetchone()
 
-    current_weight_sql = """
-        SELECT weight
-        FROM REPORT
-        WHERE id = %s AND date = %s
-    """
-    cur.execute(current_weight_sql, (user_id,))
-    current_data = cur.fetchone()
+        db.commit()
 
-    db.commit()
-
-    daily_report = {
-        "name": user_data[0],
-        "date": date,
-        "intake_carbo": daily_data[0],
-        "intake_protein": daily_data[1],
-        "intake_fat": daily_data[2],
-        "intake_kcal": daily_data[3],
-        "basal_kcal": user_data[1],
-        "current_weight": current_data  # 현재 몸무게 반환
-    }
+        daily_report = {
+            "name": user_data[0],
+            "date": date,
+            "intake_carbo": daily_data[0],
+            "intake_protein": daily_data[1],
+            "intake_fat": daily_data[2],
+            "intake_kcal": daily_data[3],
+            "current_weight": current_data  # 당일 몸무게 반환
+        }
     return daily_report
 
 
+# 주 및 뭘 간 리포트 반환용 함수
 def get_week_month_report(user_id, start_date, end_date):
-    cur = db.cursor()
+    with db.cursor() as cur:
+        nutri_WM_sql = """
+            SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
+            SUM(food_fat) AS fat, SUM(food_kcal) AS calories
+            FROM PLANNER
+            WHERE id = %s AND date BETWEEN %s AND %s
+        """
+        cur.execute(nutri_WM_sql, (user_id, start_date, end_date))
+        WM_data = cur.fetchone()
 
-    nutri_WM_sql = """
-        SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
-        SUM(food_fat) AS fat, SUM(food_kcal) AS calories
-        FROM PLANNER
-        WHERE id = %s AND date BETWEEN %s AND %s
-    """
-    cur.execute(nutri_WM_sql, (user_id, start_date, end_date))
-    WM_data = cur.fetchone()
+        WM_weight_sql = """
+            SELECT weight
+            FROM REPORT
+            WHERE id = %s AND date = %s
+        """
+        cur.execute(WM_weight_sql, (user_id,  end_date))
+        weight_data = cur.fetchone()
 
-    WM_weight_sql = """
-        SELECT weight
-        FROM REPORT
-        WHERE id = %s AND date = %s
-    """
-    cur.execute(WM_weight_sql, (user_id,  end_date))
-    weight_data = cur.fetchone()
+        # 마지막 날에 대한 정보가 입력되지 않았을 경우, 해당 기간 가장 마지막에 입력한 반환하도록 수정
+        if not weight_data or weight_data[0] is None:
+            recent_weight_sql = """
+                SELECT weight FROM REPORT
+                WHERE id = %s AND date BETWEEN %s AND %s
+                ORDER BY date DESC
+                LIMIT 1
+            """
+            cur.execute(recent_weight_sql, (user_id, start_date, end_date))
+            weight_data = cur.fetchone()
 
-    name_meta_weight_sql = """
-        SELECT name, active_meta, goal_weight
-        FROM USER
-        JOIN MYPAGE ON USER.id = MYPAGE.id
-        WHERE USER.id = %s
-    """
-    cur.execute(name_meta_weight_sql, (user_id,))
-    user_data = cur.fetchone()
+        name_sql = """
+            SELECT name
+            FROM USER
+            JOIN MYPAGE ON USER.id = MYPAGE.id
+            WHERE USER.id = %s
+        """
+        cur.execute(name_sql, (user_id,))
+        user_data = cur.fetchone()
 
-    week_month_report = {
-        "name": user_data[0],
-        "range": start_date + "-" + end_date,
-        "intake_carbo": WM_data[0],
-        "intake_protein": WM_data[1],
-        "intake_fat": WM_data[2],
-        "intake_kcal": WM_data[3],
-        "basal_kcal": user_data[1],
-        "recent_weight": weight_data,  # 각 주 혹 각 월의 마지막날에 해당하는 몸무게
-        "goal_weight": user_data[2]
-    }
+        week_month_report = {
+            "name": user_data[0],
+            "range": start_date + "-" + end_date,
+            "intake_carbo": WM_data[0],
+            "intake_protein": WM_data[1],
+            "intake_fat": WM_data[2],
+            "intake_kcal": WM_data[3],
+            "recent_weight": weight_data,  # 각 주/각 월의 마지막날에 해당하는 몸무게, 아니면 최근 몸무게
+        }
 
     return week_month_report
+
+
+def basal_goal_4_report(user_id):
+    with db.cursor() as cur:
+        goal_weight_sql = """
+            SELECT goal_weight
+            FROM USER
+            WHERE id = %s
+        """
+        cur.execute(goal_weight_sql, (user_id,))
+        goal_weight_data = cur.fetchone()
+
+        basal_meta_sql = """ 
+            SELECT active_mata
+            FROM MYPAGE
+            WHERE id = %s
+        """
+        cur.execute(basal_meta_sql, (user_id,))
+        basal_meta_data = cur.fetchone()
+
+        basal_goal = {
+            "goal_weight": goal_weight_data[0],
+            "basal_mata": basal_meta_data[0]
+        }
+
+    return basal_goal
 
 
 # 일, 주, 월간 리포트 필요한 데이터 반환
@@ -674,54 +707,58 @@ def report():
         report = get_week_month_report(user_id, start_month, end_month)
         monthly_reports.append(report)
 
+    # 기초대사량, 몸무게 따로 반환하도록 수정
+    user_basal_goal = basal_goal_4_report(user_id)
+
     return jsonify({
         "daily_reports": daily_reports,
         "weekly_reports": weekly_reports,
-        "monthly_reports": monthly_reports
+        "monthly_reports": monthly_reports,
+        "basal_goal": user_basal_goal
     })
 
 
 # -------------------------------------------------------
 # 마이페이지
-def get_user_info(user_id):
-    cur = db.cursor()
+# def get_user_info(user_id):
+#     cur = db.cursor()
 
-    user_info_sql = "SELECT name, age, weight, height, gender, exercise, goal_weight FROM USER WHERE id = %s"
-    cur.execute(user_info_sql, (user_id,))
-    user_info = cur.fetchone()
+#     user_info_sql = "SELECT name, age, weight, height, gender, exercise, goal_weight FROM USER WHERE id = %s"
+#     cur.execute(user_info_sql, (user_id,))
+#     user_info = cur.fetchone()
 
-    if user_info:
-        name, age, weight, height, gender, exercise, goal_weight = user_info
-        basal_meta_sql = "SELECT active_meta FROM MYPAGE WHERE id = %s"
-        cur.execute(basal_meta_sql, (user_id,))
-        basal_meta_result = cur.fetchone()
-        basal_meta = basal_meta_result[0] if basal_meta_result else None
+#     if user_info:
+#         name, age, weight, height, gender, exercise, goal_weight = user_info
+#         basal_meta_sql = "SELECT active_meta FROM MYPAGE WHERE id = %s"
+#         cur.execute(basal_meta_sql, (user_id,))
+#         basal_meta_result = cur.fetchone()
+#         basal_meta = basal_meta_result[0] if basal_meta_result else None
 
-        return {
-            "name": name,
-            "age": age,
-            "weight": weight,
-            "height": height,
-            "gender": gender,
-            "exercise": exercise,
-            "basal_meta": basal_meta,
-            "goal_weight": goal_weight
-        }
-    else:
-        return None
+#         return {
+#             "name": name,
+#             "age": age,
+#             "weight": weight,
+#             "height": height,
+#             "gender": gender,
+#             "exercise": exercise,
+#             "basal_meta": basal_meta,
+#             "goal_weight": goal_weight
+#         }
+#     else:
+#         return None
 
 
-@user_bp.route('/mypage', methods=['GET'])
-def mypage():
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({"error": "User not logged in."}), 400
+# @user_bp.route('/mypage', methods=['GET'])
+# def mypage():
+#     user_id = session.get('user_id')
+#     if not user_id:
+#         return jsonify({"error": "User not logged in."}), 400
 
-    user_info = get_user_info(user_id)
-    if user_info:
-        return jsonify(user_info)
-    else:
-        return jsonify({"error": "User not found."}), 404
+#     user_info = get_user_info(user_id)
+#     if user_info:
+#         return jsonify(user_info)
+#     else:
+#         return jsonify({"error": "User not found."}), 404
 
 # -------------------------------------------------
 
@@ -737,3 +774,13 @@ def hello_world():
 
     print(result)
     return 'Hello World!'
+
+
+def get_helpbar_info(user_id):
+    with db.cursor() as cur:
+        # HELPBAR 관련 정보를 데이터베이스에서 조회하는 쿼리
+        # 예시: cursor.execute("SELECT * FROM HELPBAR WHERE id = %s", (user_id,))
+        # 데이터를 가져오는 로직 구현
+        pass
+    # 결과를 반환
+    return {"username": "example", "total_calories": 0, "basal_meta": 0, "calories_per_meal": {"breakfast": 0, "lunch": 0, "dinner": 0}}
