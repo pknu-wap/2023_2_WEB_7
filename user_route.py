@@ -519,21 +519,19 @@ def planner():
 
 
 # ------
-
-def get_date_ranges_for_weekly_reports(date):
-    # 해당 월의 첫째 날과 마지막 날을 계산
+def get_four_weekly_ranges(date):
+    # 해당 월의 첫째 날과 마지막 날 계산
     start_of_month = date.replace(day=1)
     end_of_month = start_of_month + timedelta(days=31)
     end_of_month = end_of_month.replace(day=1) - timedelta(days=1)
 
-    # 해당 월의 모든 주에 대한 시작과 끝 날짜 계산
-    weekly_ranges = []
-    current_date = start_of_month
-    while current_date <= end_of_month:
-        start_week = current_date - timedelta(days=current_date.weekday())
-        end_week = start_week + timedelta(days=6)
-        weekly_ranges.append((start_week, end_week))
-        current_date = end_week + timedelta(days=1)
+    # 4주간의 시작과 끝 날짜 계산
+    weekly_ranges = [
+        (start_of_month, start_of_month + timedelta(days=6)),
+        (start_of_month + timedelta(days=7), start_of_month + timedelta(days=13)),
+        (start_of_month + timedelta(days=14), start_of_month + timedelta(days=20)),
+        (start_of_month + timedelta(days=21), end_of_month)
+    ]
 
     return weekly_ranges
 
@@ -561,15 +559,6 @@ def get_daily_report(user_id, date):
         cur.execute(nutri_daily_sql, (user_id, date))
         daily_data = cur.fetchone()
 
-        name_sql = """
-            SELECT name
-            FROM USER
-            JOIN MYPAGE ON USER.id = MYPAGE.id
-            WHERE USER.id = %s
-        """
-        cur.execute(name_sql, (user_id,))
-        user_data = cur.fetchone()
-
         current_weight_sql = """
             SELECT weight
             FROM REPORT
@@ -581,7 +570,6 @@ def get_daily_report(user_id, date):
         db.commit()
 
         daily_report = {
-            "name": user_data[0],
             "date": date,
             "intake_carbo": daily_data[0],
             "intake_protein": daily_data[1],
@@ -623,18 +611,9 @@ def get_week_month_report(user_id, start_date, end_date):
             cur.execute(recent_weight_sql, (user_id, start_date, end_date))
             weight_data = cur.fetchone()
 
-        name_sql = """
-            SELECT name
-            FROM USER
-            JOIN MYPAGE ON USER.id = MYPAGE.id
-            WHERE USER.id = %s
-        """
-        cur.execute(name_sql, (user_id,))
-        user_data = cur.fetchone()
-
         week_month_report = {
-            "name": user_data[0],
-            "range": start_date + "-" + end_date,
+            "start_date": start_date,
+            "end_date": end_date,
             "intake_carbo": WM_data[0],
             "intake_protein": WM_data[1],
             "intake_fat": WM_data[2],
@@ -645,27 +624,21 @@ def get_week_month_report(user_id, start_date, end_date):
     return week_month_report
 
 
-def basal_goal_4_report(user_id):
+def user_report(user_id):
     with db.cursor() as cur:
-        goal_weight_sql = """
-            SELECT goal_weight
+        user_data_sql = """
+            SELECT name, active_meta, weight
             FROM USER
-            WHERE id = %s
+            JOIN MYPAGE ON USER.id = MYPAGE.id
+            WHERE USER.id = %s
         """
-        cur.execute(goal_weight_sql, (user_id,))
-        goal_weight_data = cur.fetchone()
-
-        basal_meta_sql = """ 
-            SELECT active_mata
-            FROM MYPAGE
-            WHERE id = %s
-        """
-        cur.execute(basal_meta_sql, (user_id,))
-        basal_meta_data = cur.fetchone()
+        cur.execute(user_data_sql, (user_id,))
+        user_data = cur.fetchone()
 
         basal_goal = {
-            "goal_weight": goal_weight_data[0],
-            "basal_mata": basal_meta_data[0]
+            "name": user_data[0],
+            "basal_mata": user_data[1],
+            "goal_weight": user_data[2]
         }
 
     return basal_goal
@@ -689,7 +662,7 @@ def report():
         daily_reports.append(daily_report)
 
     # 주간 리포트
-    weekly_ranges = get_date_ranges_for_weekly_reports(date)
+    weekly_ranges = get_four_weekly_ranges(date)
     weekly_reports = []
     for start_date, end_date in weekly_ranges:
         report = get_week_month_report(user_id, start_date.strftime(
@@ -707,14 +680,14 @@ def report():
         report = get_week_month_report(user_id, start_month, end_month)
         monthly_reports.append(report)
 
-    # 기초대사량, 몸무게 따로 반환하도록 수정
-    user_basal_goal = basal_goal_4_report(user_id)
+    # 기초대사량, 몸무게 이름까지 따로 반환하도록 수정 - 한꺼번에 하도록 JOIN
+    user_Data = user_report(user_id)
 
     return jsonify({
         "daily_reports": daily_reports,
         "weekly_reports": weekly_reports,
         "monthly_reports": monthly_reports,
-        "basal_goal": user_basal_goal
+        "basal_goal": user_Data
     })
 
 
