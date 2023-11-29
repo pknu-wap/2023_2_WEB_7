@@ -575,7 +575,7 @@ def get_daily_report(user_id, date):
             "intake_protein": daily_data[1],
             "intake_fat": daily_data[2],
             "intake_kcal": daily_data[3],
-            "current_weight": current_data  # 당일 몸무게 반환
+            "current_weight": current_data  # date에 해당하는 몸무게 반환, 없으면 null
         }
     return daily_report
 
@@ -623,11 +623,13 @@ def get_week_month_report(user_id, start_date, end_date):
 
     return week_month_report
 
+# user의 이름, 기초대사량, 목표 몸무게 반환하도록 수정
+
 
 def user_report(user_id):
     with db.cursor() as cur:
         user_data_sql = """
-            SELECT name, active_meta, weight
+            SELECT name, active_meta, goal_weight
             FROM USER
             JOIN MYPAGE ON USER.id = MYPAGE.id
             WHERE USER.id = %s
@@ -645,6 +647,7 @@ def user_report(user_id):
 
 
 # 일, 주, 월간 리포트 필요한 데이터 반환
+# 랜더링 될떄 표기할 user_id 미수정입니다
 @user_bp.route('/report', methods=['GET'])
 def report():
     user_id = session.get('user_id')
@@ -680,14 +683,14 @@ def report():
         report = get_week_month_report(user_id, start_month, end_month)
         monthly_reports.append(report)
 
-    # 기초대사량, 몸무게 이름까지 따로 반환하도록 수정 - 한꺼번에 하도록 JOIN
+    # 기초대사량, 몸무게 이름까지 따로 반환하도록 수정 - 한꺼번에 하도록 JOIN함
     user_Data = user_report(user_id)
 
     return jsonify({
         "daily_reports": daily_reports,
         "weekly_reports": weekly_reports,
         "monthly_reports": monthly_reports,
-        "basal_goal": user_Data
+        "user_report": user_Data
     })
 
 
