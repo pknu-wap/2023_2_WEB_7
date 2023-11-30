@@ -275,6 +275,7 @@ def recipe_info(number):
     food_info = soup.find(attrs={'type': 'application/ld+json'})
     result = json.loads(food_info.text)
     name = result['name']  # 레시피 이름
+
     ingredient = ','.join(result['recipeIngredient'])  # 레시피에 필요한 재료
 
     # 레시피
