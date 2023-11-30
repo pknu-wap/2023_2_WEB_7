@@ -6,8 +6,8 @@ from bs4 import BeautifulSoup
 from db_connector import db
 import requests
 from datetime import datetime, timedelta
-
-
+from contextlib import contextmanager
+import json
 
 # Flask 앱 초기화 및 bcrypt 초기화
 app = Flask(__name__)
@@ -31,6 +31,12 @@ user_bp = Blueprint('user', __name__, url_prefix='/user')
        #     return True
    # return False
 
+
+
+        
+
+
+
 #id 중복 테스트 
 @user_bp.route('/check', methods = ['POST'])
 def check():
@@ -41,15 +47,17 @@ def check():
     if not id:
         return jsonify({'error': 'ID NOT provided'}), 400
 
-    cursor = db.cursor()
-    sql = "SELECT id FROM USER WHERE id = %s"
-    cursor.execute(sql, (id,))
-    result = cursor.fetchone()
+    with db.cursor() as cursor:
+        sql = "SELECT id FROM USER WHERE id = %s"
+        cursor.execute(sql, (id,))
+        result = cursor.fetchone()
 
     if result:
         return jsonify({'error': 'ID already exists'}), 409  
 
     return jsonify({'message': 'ID is available'})
+
+        
 
 
 # 회원가입
@@ -120,6 +128,7 @@ def save():
     
     
     return jsonify({' result' : 'ok'})
+    
 
 
 
@@ -137,13 +146,15 @@ def login():
     id = data.get('id')
     pw = data.get('password')
 
-    cursor = db.cursor()
-    sql = """
-        SELECT pw FROM USER
-        WHERE id = %s
-    """
-    cursor.execute(sql, (id,))
-    result = cursor.fetchone()
+    with db.cursor() as cursor:
+        sql = """
+            SELECT pw FROM USER
+            WHERE id = %s
+        """
+        cursor.execute(sql, (id,))
+        result = cursor.fetchone()
+    
+    
 
     if result and bcrypt.check_password_hash(result[0], pw):
         session.permanent = True
@@ -154,6 +165,8 @@ def login():
     
     
     
+    
+    #db.close()
     
     
     
@@ -180,28 +193,21 @@ def edit():
     exercise = data.get('exercise')
     goal_weight = data.get('goal_weight')
 
-    
     if not all([name, age, weight, height, gender, exercise, goal_weight]):
         return jsonify({'error': 'Missing or invalid input'}), 400
 
-    
-    try:
-        cursor = db.cursor()
+    with db.cursor() as cur:
         sql = """
             UPDATE USER
             SET name = %s, age = %s, weight = %s, height = %s, 
                 gender = %s, exercise = %s, goal_weight = %s
             WHERE id = %s
         """
-        cursor.execute(sql, (name, age, weight, height, gender, exercise, goal_weight, user_id))
+        cur.execute(sql, (name, age, weight, height, gender, exercise, goal_weight, user_id))
         db.commit()
 
-        return jsonify({'message': 'User information updated successfully'})
-    except Exception as e:
-        db.rollback()
-        return jsonify({'error': str(e)}), 500
+    return jsonify({'message': 'User information updated successfully'})
 
-    
     
     
 #마이페이지
@@ -249,7 +255,7 @@ def mypage():
     else:
         
         return jsonify({'error': 'User information not found'}), 404
-
+    
 
 def get_helpbar_info(user_id, date):
     cur = db.cursor()
@@ -339,7 +345,7 @@ def update_user_weight(user_id, date, user_weight):
     db.commit()
 
 
-@user_bp.route('/planner',  methods=['GET', 'POST'])
+@user_bp.route('/planner',  methods=['GET'])
 def planner():
     
     user_id = session.get('user_id')
@@ -348,81 +354,139 @@ def planner():
         return jsonify({'error': 'User not logged in'}), 401
     
     
-    if request.method == 'GET':
-        
-        current_date = datetime.now().strftime('%Y-%m-%d')
-        helpbar_data = get_helpbar_info(user_id, current_date)
-        
-
-        
-    
-        meals_sql = """
-        SELECT meal_when, date, food_name, food_carbo, food_protein, food_fat, food_kcal
-        FROM PLANNER
-        WHERE id = %s 
-        ORDER BY date, meal_when
-        """
-        cur = db.cursor()
-        cur.execute(meals_sql, (user_id, ))
-        meals = cur.fetchall()
-    
-        meals_data = []
-        for meal in meals:
-            meals_data.append({
-                "meal_when": meal[0],
-                "date": meal[1].strftime('%Y-%m-%d'),
-                "food_name": meal[2],
-                "food_carbo": meal[3],
-                "food_protein": meal[4],
-                "food_fat": meal[5],
-                "food_kcal": meal[6]
-            })
-    
-    #meals_data 라는 리스트 안에 순서대로 아점저(정수형태), 날짜(yyyy--mm-dd), 음식이름, 탄수,단백,지방,음식칼로리 들어있고
-    #이걸 meals라는 변수에 넣어서 저장
-    
-        return jsonify({
-            "helpbar_info": helpbar_data,
-            "meals": meals_data 
-        })    
-    
     
         
-    elif request.method == 'POST':
-        data = request.json
-        action = data.get('action')
-        user_id = session.get('user_id')
+    current_date = datetime.now().strftime('%Y-%m-%d')
+    helpbar_data = get_helpbar_info(user_id, current_date)
+        
+    
+    return jsonify({
+        "helpbar_info": helpbar_data,
+    })    
+    
+    
+#@user_bp.route('/mealrecords/<date>', methods=['GET', 'POST'])
+#def mealsrecord(date):
+    user_id = session.get('user_id')
 
-        if action == 'update_weight':
-            user_weight = data.get('weight')
-            if not user_weight:
-                return jsonify({"error": "Missing weight"}), 400
-            try:
-                user_weight = float(user_weight)
-            except ValueError:
-                return jsonify({"error": "Invalid weight format"}), 400
-            update_user_weight(user_id, user_weight)
-            return jsonify({"message": "User weight updated successfully"}), 200
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
 
-        date = data.get('date')  # 먹은 날짜 (예: "2023-11-24")
-        meal_when = data.get('meal_when')  # 식사 시간 (아침: 1, 점심: 2, 저녁: 3)
-        food_name = data.get('food_name')  # 음식 이름
-        food_kcal = data.get('food_kcal')  # 해당 끼니 칼로리
-        food_carbo = data.get('food_carbo')  # 탄수화물
-        food_protein = data.get('food_protein')  # 단백질
-        food_fat = data.get('food_fat')  # 지방
-        if not date or not meal_when or not food_name:
-            return jsonify({"error": "Missing date, meal_when or food_name"}), 400
+    with db.cursor() as cursor:
+        if request.method == 'GET':
+            meals = {1: [], 2: [], 3: []}
 
-        if action == 'save':
-            save_planner(user_id, date, meal_when, food_name,
-                         food_carbo, food_protein, food_fat, food_kcal)
-        elif action == 'delete':
-            delete_planner(user_id, date, meal_when, food_name)
-        else:
-            return jsonify({"error": "Invalid action"}), 400
+            sql = """
+                SELECT meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal
+                FROM PLANNER
+                WHERE id = %s AND date = %s
+            """
+            cursor.execute(sql, (user_id, date))
+            records = cursor.fetchall()
 
-        return jsonify({"message": "Action fetched successfully"}), 200
+            for record in records:
+                meal_when, name, carbo, protein, fat, kcal = record
+                meals[meal_when].append({
+                    "food_name": name,
+                    "food_carbo": carbo,
+                    "food_protein": protein,
+                    "food_fat": fat,
+                    "food_kcal": kcal
+                })
+            return jsonify({"breakfast": meals[1], "lunch": meals[2], "dinner": meals[3]})
+
+        elif request.method == 'POST':
+            data = request.json
+            for meal_when, foods in data.items():
+                for food in foods:
+                    sql = """
+                        INSERT INTO PLANNER (id, meal_when, date, food_name, food_carbo, food_protein, food_fat, food_kcal)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                        ON DUPLICATE KEY UPDATE
+                        food_carbo = VALUES(food_carbo), food_protein = VALUES(food_protein), food_fat = VALUES(food_fat), food_kcal = VALUES(food_kcal)
+                    """
+                    cursor.execute(sql, (user_id, meal_when, date, food['food_name'], food['food_carbo'], food['food_protein'], food['food_fat'], food['food_kcal']))
+            db.commit()
+            return jsonify({'message': 'Meal records updated successfully'})
+
+    
+@user_bp.route('/mealrecords/<date>', methods=['GET', 'POST'])
+def mealsrecord(date):
+    user_id = session.get('user_id')
+
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
+
+    with db.cursor() as cursor:
+        if request.method == 'GET':
+            meals = {1: [], 2: [], 3: []}
+
+            
+            sql = """
+                SELECT meal_when, food_name, food_carbo, food_protein, food_fat, food_kcal
+                FROM PLANNER
+                WHERE id = %s AND date = %s
+            """
+            cursor.execute(sql, (user_id, date))
+            records = cursor.fetchall()
+
+            
+            for record in records:
+                meal_when, name, carbo, protein, fat, kcal = record
+                meals[meal_when].append({
+                    "food_name": name,
+                    "food_carbo": carbo,
+                    "food_protein": protein,
+                    "food_fat": fat,
+                    "food_kcal": kcal
+                })
+            
+            return jsonify({"breakfast": meals[1], "lunch": meals[2], "dinner": meals[3]})
+
+        elif request.method == 'POST':
+            data = request.json
+            meals_data = data.get('meals')
+
+            if not isinstance(meals_data, list):
+                return jsonify({'error': 'Invalid meals data'}), 400
+
+            # 각 mealWhen에 대한 기존 기록을 삭제
+            for meal in meals_data:
+                meal_when = meal.get('mealWhen')
+
+                if meal_when not in [1, 2, 3]:
+                    return jsonify({'error': 'Invalid meal when'}), 400
+
+                delete_sql = """
+                    DELETE FROM PLANNER
+                    WHERE id = %s AND date = %s AND meal_when = %s
+                """
+                cursor.execute(delete_sql, (user_id, date, meal_when))
+
+            # 새로운 음식 기록을 삽입
+            for meal in meals_data:
+                meal_when = meal.get('mealWhen')
+                foods_data = meal.get('foods')
+
+                for food in foods_data:
+                    insert_sql = """
+                        INSERT INTO PLANNER (id, meal_when, date, food_name, food_carbo, food_protein, food_fat, food_kcal)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    """
+                    cursor.execute(insert_sql, (user_id, meal_when, date, food['food_name'], food['food_carbo'], food['food_protein'], food['food_fat'], food['food_kcal']))
+            
+            db.commit()
+            return jsonify({'message': 'Meal records updated successfully'})
+
+    return jsonify({'error': 'An unexpected error occurred'}), 500
+
+
+# 여기서 db는 데이터베이스 연결을 나타내고, cursor.execute는 SQL 쿼리를 실행합니다.
+# db.commit()은 모든 SQL 쿼리의 변경사항을 데이터베이스에 커밋합니다.
+
+    
+
+
     
     
 
@@ -567,8 +631,7 @@ def search_food_helpbar_info(food_name):
 
 # 레시피 내용
 @user_bp.route('/recipe/<int:number>', methods=['GET'])
-def get_recipe_helpbar_info():
-    number = request.args.get('number')
+def get_recipe_helpbar_info(number):
     recipe_data = recipe_info(number)
 
     user_id = session.get('user_id')
@@ -595,22 +658,22 @@ def get_recipe_helpbar_info():
 
 # 받은 날짜 기준으로 당해 년도 모든 주의 시작, 끝 / 모든 월의 시작, 끝을 반환
 # 즉 하루(당일 날짜) 보내주면 그해 년도꺼 계산
-def get_date_ranges_for_weekly_reports(date):
-    # 해당 월의 첫째 날과 마지막 날을 계산
+def get_four_weekly_ranges(date):
+    # 해당 월의 첫째 날과 마지막 날 계산
     start_of_month = date.replace(day=1)
     end_of_month = start_of_month + timedelta(days=31)
     end_of_month = end_of_month.replace(day=1) - timedelta(days=1)
 
-    # 해당 월의 모든 주에 대한 시작과 끝 날짜 계산
-    weekly_ranges = []
-    current_date = start_of_month
-    while current_date <= end_of_month:
-        start_week = current_date - timedelta(days=current_date.weekday())
-        end_week = start_week + timedelta(days=6)
-        weekly_ranges.append((start_week, end_week))
-        current_date = end_week + timedelta(days=1)
+    # 4주간의 시작과 끝 날짜 계산
+    weekly_ranges = [
+        (start_of_month, start_of_month + timedelta(days=6)),
+        (start_of_month + timedelta(days=7), start_of_month + timedelta(days=13)),
+        (start_of_month + timedelta(days=14), start_of_month + timedelta(days=20)),
+        (start_of_month + timedelta(days=21), end_of_month)
+    ]
 
     return weekly_ranges
+
 
 
 def get_previous_months(date, months=2):
@@ -623,52 +686,38 @@ def get_previous_months(date, months=2):
     return monthly_ranges
 
 
-# ----------------------------------------------------------------------------------------------------------
-
 
 
 # 일간 리포트 내용반환하는 함수
 def get_daily_report(user_id, date):
-    cur = db.cursor()
+    with db.cursor() as cur:
+        nutri_daily_sql = """
+            SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
+            SUM(food_fat) AS fat, SUM(food_kcal) AS calories 
+            FROM PLANNER
+            WHERE id = %s AND date = %s
+        """
+        cur.execute(nutri_daily_sql, (user_id, date))
+        daily_data = cur.fetchone()
 
-    nutri_daily_sql = """
-        SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
-        SUM(food_fat) AS fat, SUM(food_kcal) AS calories 
-        FROM PLANNER
-        WHERE id = %s AND date = %s
-    """
-    cur.execute(nutri_daily_sql, (user_id, date))
-    daily_data = cur.fetchone()
+        current_weight_sql = """
+            SELECT weight
+            FROM REPORT
+            WHERE id = %s AND date = %s
+        """
+        cur.execute(current_weight_sql, (user_id,))
+        current_data = cur.fetchone()
 
-    name_meta_sql = """
-        SELECT name, active_meta
-        FROM USER
-        JOIN MYPAGE ON USER.id = MYPAGE.id
-        WHERE USER.id = %s
-    """
-    cur.execute(name_meta_sql, (user_id,))
-    user_data = cur.fetchone()
+        db.commit()
 
-    current_weight_sql = """
-        SELECT weight
-        FROM REPORT
-        WHERE id = %s AND date = %s
-    """
-    cur.execute(current_weight_sql, (user_id,date)) # date 추가함
-    current_data = cur.fetchone()
-
-    db.commit()
-
-    daily_report = {
-        "name": user_data[0],
-        "date": date,
-        "intake_carbo": daily_data[0],
-        "intake_protein": daily_data[1],
-        "intake_fat": daily_data[2],
-        "intake_kcal": daily_data[3],
-        "basal_kcal": user_data[1],
-        "current_weight": current_data  # 현재 몸무게 반환
-    }
+        daily_report = {
+            "date": date,
+            "intake_carbo": daily_data[0],
+            "intake_protein": daily_data[1],
+            "intake_fat": daily_data[2],
+            "intake_kcal": daily_data[3],
+            "current_weight": current_data  # date에 해당하는 몸무게 반환, 없으면 null
+        }
     return daily_report
 
 
@@ -677,70 +726,86 @@ def get_daily_report(user_id, date):
 # 아래의 함수에 일일이 대입해 이름, 섭취 칼로리 등의 데이터를 반환한다.
 # 받는 데이터의 양이 많지 않을까 우려,,
 def get_week_month_report(user_id, start_date, end_date):
-    cur = db.cursor()
+    with db.cursor() as cur:
+        nutri_WM_sql = """
+            SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
+            SUM(food_fat) AS fat, SUM(food_kcal) AS calories
+            FROM PLANNER
+            WHERE id = %s AND date BETWEEN %s AND %s
+        """
+        cur.execute(nutri_WM_sql, (user_id, start_date, end_date))
+        WM_data = cur.fetchone()
 
-    nutri_WM_sql = """
-        SELECT SUM(food_carbo) AS carbs, SUM(food_protein) AS protein, 
-        SUM(food_fat) AS fat, SUM(food_kcal) AS calories
-        FROM PLANNER
-        WHERE id = %s AND date BETWEEN %s AND %s
-    """
-    cur.execute(nutri_WM_sql, (user_id, start_date, end_date))
-    WM_data = cur.fetchone()
+        WM_weight_sql = """
+            SELECT weight
+            FROM REPORT
+            WHERE id = %s AND date = %s
+        """
+        cur.execute(WM_weight_sql, (user_id,  end_date))
+        weight_data = cur.fetchone()
 
-    WM_weight_sql = """
-        SELECT weight
-        FROM REPORT
-        WHERE id = %s AND date = %s
-    """
-    cur.execute(WM_weight_sql, (user_id,  end_date))
-    weight_data = cur.fetchone()
+        # 마지막 날에 대한 정보가 입력되지 않았을 경우, 해당 기간 가장 마지막에 입력한 반환하도록 수정
+        if not weight_data or weight_data[0] is None:
+            recent_weight_sql = """
+                SELECT weight FROM REPORT
+                WHERE id = %s AND date BETWEEN %s AND %s
+                ORDER BY date DESC
+                LIMIT 1
+            """
+            cur.execute(recent_weight_sql, (user_id, start_date, end_date))
+            weight_data = cur.fetchone()
 
-    name_meta_weight_sql = """
-        SELECT name, active_meta, goal_weight
-        FROM USER
-        JOIN MYPAGE ON USER.id = MYPAGE.id
-        WHERE USER.id = %s
-    """
-    cur.execute(name_meta_weight_sql, (user_id,))
-    user_data = cur.fetchone()
-
-    week_month_report = {
-        "name": user_data[0],
-        "range": start_date + "-" + end_date,
-        "intake_carbo": WM_data[0],
-        "intake_protein": WM_data[1],
-        "intake_fat": WM_data[2],
-        "intake_kcal": WM_data[3],
-        "basal_kcal": user_data[1],
-        "recent_weight": weight_data,  # 각 주 혹 각 월의 마지막날에 해당하는 몸무게
-        "goal_weight": user_data[2]
-    }
+        week_month_report = {
+            "start_date": start_date,
+            "end_date": end_date,
+            "intake_carbo": WM_data[0],
+            "intake_protein": WM_data[1],
+            "intake_fat": WM_data[2],
+            "intake_kcal": WM_data[3],
+            "recent_weight": weight_data,  # 각 주/각 월의 마지막날에 해당하는 몸무게, 아니면 최근 몸무게
+        }
 
     return week_month_report
+
+def user_report(user_id):
+    with db.cursor() as cur:
+        user_data_sql = """
+            SELECT name, active_meta, goal_weight
+            FROM USER
+            JOIN MYPAGE ON USER.id = MYPAGE.id
+            WHERE USER.id = %s
+        """
+        cur.execute(user_data_sql, (user_id,))
+        user_data = cur.fetchone()
+
+        basal_goal = {
+            "name": user_data[0],
+            "basal_mata": user_data[1],
+            "goal_weight": user_data[2]
+        }
+
+    return basal_goal
 
 
 # 일, 주, 월간 리포트 필요한 데이터 반환
 @user_bp.route('/report', methods=['GET'])
 def report():
     user_id = session.get('user_id')
-    
-    current_date_str = datetime.now().strftime('%Y-%m-%d')
-    current_date = datetime.strptime(current_date_str, '%Y-%m-%d')
-    
-    if not user_id or not current_date:
-        return jsonify({"error": "Missing id or date parameter."}), 400
+    date = datetime.now().strftime('%Y-%m-%d')  # 현재 날짜를 기준으로 리포트 갱신되도록 코드 수정
+
+    if not user_id:
+        return jsonify({'error': 'User not logged in'}), 401
 
     # 일간 리포트
     daily_reports = []
     for i in range(7):
-        daily_date = current_date - timedelta(days=i)
+        daily_date = date - timedelta(days=i)
         daily_report = get_daily_report(
             user_id, daily_date.strftime('%Y-%m-%d'))
         daily_reports.append(daily_report)
 
     # 주간 리포트
-    weekly_ranges = get_date_ranges_for_weekly_reports(current_date)
+    weekly_ranges = get_four_weekly_ranges(date)
     weekly_reports = []
     for start_date, end_date in weekly_ranges:
         report = get_week_month_report(user_id, start_date.strftime(
@@ -748,7 +813,7 @@ def report():
         weekly_reports.append(report)
 
     # 월간 리포트
-    previous_months = get_previous_months(current_date)
+    previous_months = get_previous_months(date)
     monthly_reports = []
     for month_date in previous_months:
         start_month = month_date.strftime('%Y-%m-%d')
@@ -758,10 +823,14 @@ def report():
         report = get_week_month_report(user_id, start_month, end_month)
         monthly_reports.append(report)
 
+    # 기초대사량, 몸무게 이름까지 따로 반환하도록 수정 - 한꺼번에 하도록 JOIN함
+    user_Data = user_report(user_id)
+
     return jsonify({
         "daily_reports": daily_reports,
         "weekly_reports": weekly_reports,
-        "monthly_reports": monthly_reports
+        "monthly_reports": monthly_reports,
+        "user_report": user_Data
     })
 
 
