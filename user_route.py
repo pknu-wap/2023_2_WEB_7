@@ -592,6 +592,11 @@ def get_week_month_report(user_id, start_date, end_date):
         cur.execute(nutri_WM_sql, (user_id, start_date, end_date))
         WM_data = cur.fetchone()
 
+        # 시작 날짜와 종료 날짜 간의 일수 계산
+        start_date_obj = datetime.strptime(start_date, '%Y-%m-%d')
+        end_date_obj = datetime.strptime(end_date, '%Y-%m-%d')
+        days_between = (end_date_obj - start_date_obj).days + 1  # 포함하는 일수
+
         WM_weight_sql = """
             SELECT weight
             FROM REPORT
@@ -611,13 +616,18 @@ def get_week_month_report(user_id, start_date, end_date):
             cur.execute(recent_weight_sql, (user_id, start_date, end_date))
             weight_data = cur.fetchone()
 
+        average_carbs = WM_data[0] / days_between if WM_data[0] else 0
+        average_protein = WM_data[1] / days_between if WM_data[1] else 0
+        average_fat = WM_data[2] / days_between if WM_data[2] else 0
+        average_calories = WM_data[3] / days_between if WM_data[3] else 0
+
         week_month_report = {
             "start_date": start_date,
             "end_date": end_date,
-            "intake_carbo": WM_data[0],
-            "intake_protein": WM_data[1],
-            "intake_fat": WM_data[2],
-            "intake_kcal": WM_data[3],
+            "intake_carbo": average_carbs,
+            "intake_protein": average_protein,
+            "intake_fat": average_fat,
+            "intake_kcal": average_calories,
             "recent_weight": weight_data,  # 각 주/각 월의 마지막날에 해당하는 몸무게, 아니면 최근 몸무게
         }
 
@@ -629,7 +639,7 @@ def get_week_month_report(user_id, start_date, end_date):
 def user_report(user_id):
     with db.cursor() as cur:
         user_data_sql = """
-            SELECT name, active_meta, goal_weight
+            SELECT name, active_meta, weight, goal_weight
             FROM USER
             JOIN MYPAGE ON USER.id = MYPAGE.id
             WHERE USER.id = %s
@@ -640,7 +650,8 @@ def user_report(user_id):
         basal_goal = {
             "name": user_data[0],
             "basal_mata": user_data[1],
-            "goal_weight": user_data[2]
+            "weight": user_data[2],
+            "goal_weight": user_data[3]
         }
 
     return basal_goal
