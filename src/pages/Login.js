@@ -133,7 +133,7 @@ function Login() {
     if (!idError&&!passwordError) {
       setidError('\t');
       setPasswordError('\t');
-      fetch('http://3.112.14.157:5000/user/login', {
+      fetch('/user/login', {
         method: 'POST',
         body: JSON.stringify({id, password}),
         headers: {
