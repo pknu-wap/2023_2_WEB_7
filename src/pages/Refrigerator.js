@@ -2,23 +2,25 @@ import Logo from "../component/Logo";
 import MenuBar from "../component/MenuBar";
 import styled from "styled-components";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import ReactModal from "react-modal";
-import axios from 'axios';
 import LottieLoading from "../img/LottieLoading";
+import empty from "../img/empty.png";
 
 const Body = styled.div`
   margin: 0;
   background-color: #FFFDFA;
-  padding: 60px 270px;
+  padding: 60px 330px 220px;
   width: 100%;
-  height: 100vh;
+  height: 100%;
 
   h2 {
     margin: 50px 0 30px;
     color: #000000;
     font-family: Noto Sans KR;
-    font-size: 37px;
-    font-weight: 700;
+    font-size: 30px;
+    font-weight: 600;
   }
 `
 const Header = styled.div`
@@ -144,6 +146,9 @@ const Recipes = styled.div`
   }
 `
 const RecipesContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
   width: 100%;
   border-radius: 7px;
   border: 1px solid #000000;
@@ -151,6 +156,7 @@ const RecipesContainer = styled.div`
   padding: 50px 55px;
 `
 const RecipeItem = styled.div`
+  position: relative;
   widht: 100%;
   height: 145px;
   display: flex;
@@ -159,29 +165,62 @@ const RecipeItem = styled.div`
   img {
     width: 210px;
     height: 100%;
+    border-radius: 8px;
   }
   section {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    padding: 20px 0 0 20px;
     color: #000000;
     font-family: Noto Sans KR;
   }
-  h2 {
+  h3 {
     font-size: 22px;
-    font-weight: 700;
+    font-weight: 600;
   }
   p {
+    margin: 20px 0;
     font-size: 18px;
-    font-weight: 300;
+    font-weight: 400;
   }
 `
 const RecipeSearch = styled.button`
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  border: none;
+  width: 133px;
+  height: 50px;
+  border-radius: 2px;
+  background-color: #F3B04D;
+  color: #FFFFFF;
+  font-family: Noto Sans KR;
+  font-size: 17px;
+  font-weight: 400;
+
+  &:hover {
+    cursor: pointer;
+  }
 `
 const RecipeLoading = styled.div`
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items:center;
+  padding-left: 30px;
+  height: 500px;
+
+  p {
+    color: #000000;
+    font-family: Noto Sans KR;
+    font-size: 20px;
+    font-weight: 500;
+    text-align: center;
+  }
+
+  svg {
+    margin-top: 230px;
+  }
 `
 
 ReactModal.setAppElement('#root');
@@ -193,6 +232,7 @@ function Refrigerator() {
   const [loading, setLoading] = useState(false);
   const [recipes, setRecipes] = useState([]);
   const [modalIsOpen, setModalIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const handleIngredientInputChange = (e) => {
     setIngredientInput(e.target.value);
@@ -214,10 +254,9 @@ function Refrigerator() {
     openModal();
     const messages = [
       { role: 'system', content: 'You are a helpful assistant.'},
-      { role: 'user', content: '가지고 있는 재료는' + ingredients.join(', ') + '이고, 이걸로 만들 수 있는 음식 알려줘. 이 재료를 전부 사용할 필요 없고, 일부만 사용한 음식부터 전부 사용한 음식 모두 괜찮아. 대답은 "(음식 이름): (사용한 식재료)" 이렇게 하면 돼. 다른 대답은 하지마. 여기서 사용한 식재료는 내가 알려준 식재료 중에서 사용된 식재료를 말하는거야.'}
+      { role: 'user', content: '가지고 있는 재료는' + ingredients.join(', ') + '이고, 이걸로 만들 수 있는 음식 알려줘. 이 재료를 전부 사용할 필요 없고, 일부만 사용한 음식부터 전부 사용한 음식 모두 괜찮아. 대답은 음식이름들이랑 사용한 식재료들만 알려주면 돼. 다른 대답은 하지마. 여기서 사용한 식재료는 내가 알려준 식재료 중에서 사용된 식재료를 말하는거야.'}
     ];
     const api_key = process.env.REACT_APP_GPT_KEY;
-    console.log(api_key);
     const config = {
       headers: {
         Authorization: `Bearer ${api_key}`,
@@ -233,40 +272,48 @@ function Refrigerator() {
       messages: messages,
     };
     try {
+      
       const response = await axios.post('https://api.openai.com/v1/chat/completions', gptData, config);
       const assistantMessage = await response.data.choices[0].message.content.split('\n');
-      console.log(assistantMessage);
-      const recipesArray = extractRecipes(assistantMessage);
 
       const recipesWithImages = await Promise.all(
-        Object.keys(recipesArray).map(async (food) => {
-          const imageUrl = await fetchKakaoImage(food);
-          return {
-            food,
-            usedIngredients: recipesArray[food],
-            imageUrl,
-          };
+        assistantMessage.map(async (recipeText) => {
+          const match = recipeText.match(/(.*?): (.*)/);
+
+          if (match) {
+            const food = match[1].trim();
+            const usedIngredients = match[2].split(',').map((ingredient) => ingredient.trim());
+
+            const imageUrl = await fetchKakaoImage(food);
+            return {
+              food,
+              usedIngredients,
+              imageUrl,
+            };
+          } else {
+            return null;
+          }
         })
       );
-
-      setRecipes(recipesArray);;
+      setRecipes(recipesWithImages);
     } catch(error) {
       console.error('API 호출 실패', error);
+    } finally {
+      setLoading(false);
+      closeModal();
     }
-    setLoading(false);
-    closeModal();
   };
 
   const fetchKakaoImage = async (food) => {
     try {
       const response = await axios.get('https://dapi.kakao.com/v2/search/image', {
         headers: {
-          Authorization: 'KakaoAK ',
+          Authorization: 'KakaoAK ' + process.env.REACT_APP_KAKAO_KEY
         },
         params: {
-          query: food,
-          page: 1,
-          size: 1,
+          "query": food,
+          "page": 1,
+          "size": 1,
         },
       });
       return response.data.documents[0].image_url;
@@ -277,43 +324,11 @@ function Refrigerator() {
     }
   };
 
-  const extractRecipes = (text) => {
-    const recipes = [];
-    const regex = /"\d+\. (.*?): (.*?)"/g;
-    let match;
-
-    while ((match = regex.exec(text)) !== null) {
-      const food = match[1].trim();
-      const usedIngredients = match[2].trim().split(', ').map((ingredient) => ingredient.trim());
-      
-      recipes.push({
-        food: food,
-        usedIngredients: usedIngredients,
-      });
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleAddIngredient();
     }
-    console.log(Array.isArray(recipes), recipes);
-    console.log(recipes.length);
-    return recipes;
   }
-
-  const sendIngredientsToServer = async (ingredients) => {
-    try {
-      const response = await fetch('/server-endpoint', {
-        method: 'POST',
-        body: JSON.stringify({ingredients}),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.ok) {
-        console.log('재료항목 저장 완료');
-      } else {
-        console.log('서버 요청 실패');
-      }
-    } catch(error) {
-      console.error('오류 발생', error);
-    }
-  };
 
   const openModal = () => {
     setModalIsOpen(true);
@@ -321,6 +336,12 @@ function Refrigerator() {
   const closeModal = () => {
     setModalIsOpen(false);
   };
+
+  const handleRecipeSearch = (selectedFood) => {
+    if (selectedFood) {
+      navigate(`/search/${selectedFood}`);
+    } 
+  }
 
   return (
     <Body>
@@ -337,15 +358,16 @@ function Refrigerator() {
               type="text"
               value={ingredientInput}
               onChange={handleIngredientInputChange}
+              onKeyDown={handleKeyDown}
               placeholder="냉장고에 있는 식재료를 입력해주세요!"
             />
-            <AddIngredient onClick={(e) => {handleAddIngredient(); sendIngredientsToServer(); }}>추가</AddIngredient>
+            <AddIngredient onClick={(e) => {handleAddIngredient();}}>추가</AddIngredient>
           </InputBox>
           <AddItem>
             {ingredients.map((ingredient, index) => (
               <IngredientBox key={index}>
                 {ingredient}
-                <DelButton onClick={(e) => {handleRemoveIngredient(index); sendIngredientsToServer(); }}>X</DelButton>
+                <DelButton onClick={(e) => {handleRemoveIngredient(index);}}>X</DelButton>
               </IngredientBox>
             ))}
           </AddItem>
@@ -360,13 +382,13 @@ function Refrigerator() {
             backgroundColor: 'rgba(0, 0, 0, 0.5)',
           },
           content: {
-            width: '400px',
-            height: '400px',
+            border: 'none',
+            borderRadius: '20px',
+            width: '600px',
+            height: '800px',
             margin: 'auto',
             display: 'flex',
-            justifiContent: 'center',
-            alignItems: 'center',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            justifyContent: 'center',
           },
         }}
         contentLabel="로딩 중"
@@ -383,12 +405,16 @@ function Refrigerator() {
         <RecipesContainer>
           {recipes.map(({food, usedIngredients, imageUrl}, index) => (
             <RecipeItem key={index}>
-              <img src={imageUrl} alt="음식 사진"/>
+              <img 
+                src={imageUrl} 
+                alt="이미지를 불러오는 데 실패하였습니다."
+                onError={(e) => { e.target.src = empty; }}
+              />
               <section>
                 <h3>{food}</h3>
                 <p>{usedIngredients.join(', ')}</p>
               </section>
-              <RecipeSearch>레시피 검색</RecipeSearch>
+              <RecipeSearch onClick={() => handleRecipeSearch(food)}>레시피 검색</RecipeSearch>
             </RecipeItem>
           ))}
         </RecipesContainer>

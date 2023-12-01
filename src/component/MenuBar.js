@@ -8,13 +8,7 @@ const Container = styled.div`
   align-items: center;
   position: absolute;
   top: 64px;
-  right: 330px;
-
-  ${(props) =>
-      props.search &&
-      css`
-        right: 180px;
-      `}
+  right: ${(props) => (props.search ? "180px" : "330px")};
 `
 const StyledNavLink = styled(NavLink)`
   color: #000000;
@@ -32,7 +26,7 @@ function MenuBar({showSearchBar = true, ...props}) {
   return (
     <Container {...props}>
       <StyledNavLink to="/planner" activeClassName="active">
-        식단
+        플래너
       </StyledNavLink>
       <StyledNavLink to="/refrigerator" activeClassName="active">
         냉장고

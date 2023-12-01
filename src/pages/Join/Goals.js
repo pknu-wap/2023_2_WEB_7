@@ -102,7 +102,7 @@ function Goals() {
     };
     console.log(userData);
     try {
-      const response = await fetch('/join', {
+      const response = await fetch('http://3.112.14.157:5000/user/join', {
         method: 'POST',
         body: JSON.stringify(userData),
         headers: {
@@ -111,7 +111,7 @@ function Goals() {
       });
 
       if (response.ok) {
-        navigate('/');
+        navigate('/main');
       } else {
         console.log('서버 요청 실패');
       }

@@ -1,5 +1,6 @@
 import logo from '../img/logo.png';
 import styled, { css } from 'styled-components';
+import { useNavigate } from 'react-router-dom';
 
 const LogoBox = styled.div`
   display: flex;
@@ -34,8 +35,14 @@ const LogoBox = styled.div`
 `
 
 function Logo() {
+  const navigate = useNavigate();
+  
+  const handleMainClick = () => {
+    navigate(`/main`);
+  };
+
   return (
-    <LogoBox>
+    <LogoBox onClick={handleMainClick}>
       <img src={logo} alt="로고" />
       <p>Eat<span>P</span>ly</p>
     </LogoBox>

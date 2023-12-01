@@ -93,23 +93,8 @@ function SearchBar({...props}) {
   const [inputValue, setInputValue] = useState('');
   const navigate = useNavigate();
 
-  const handleSVGClick = async () => {
-    try {
-      const response = await fetch('/search', {
-        method: 'POST',
-        body: JSON.stringify({ data: inputValue }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      if (response.ok) {
-        navigate(`/search/${inputValue}`);
-      } else {
-        console.error('서버 요청 실패');
-      }
-    } catch (error) {
-      console.error('오류 발생', error);
-    }
+  const handleSVGClick = () => {
+    navigate(`/search/${inputValue}`);
   };
 
   const handleEnterPress = (e) => {

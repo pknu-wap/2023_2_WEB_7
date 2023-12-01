@@ -65,7 +65,11 @@ function Mypage() {
       </Header>
       <MainContainer>
         <StateBox>
-          <State/>
+          <State
+            name={userData.name}
+            weight={userData.weight}
+            targetWeight={userData.goal_weight}
+          />
         </StateBox>
         <Content>
           <Advice
@@ -84,7 +88,7 @@ function Mypage() {
           <Diagnosis
             weight={userData.weight}
             targetWeight={userData.goal_weight}
-            basalMetabolism={userData.basal_metabolism}
+            basalMetabolism={userData.basal_meta}
           />
         </Content>
       </MainContainer>

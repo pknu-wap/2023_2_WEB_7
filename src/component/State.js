@@ -24,6 +24,7 @@ const ProgressBarContainer = styled.div`
   height: 20px;
   background-color: #FFEBCC;
   border-radius: 25px;
+  overflow: hidden;
 `
 const ProgressBar = styled.div`
   width: ${(props) => (props.progress*100).toFixed(2)}%;

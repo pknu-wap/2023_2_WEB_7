@@ -1,7 +1,16 @@
 import Logo from "./Logo";
 import { useState, useEffect} from 'react';
-import { Bar } from "react-chartjs-2"; 
 import styled from "styled-components";
+import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from 'recharts';
+import { Chart, CategoryScale, LinearScale, BarElement, Title, Legend } from 'chart.js/auto';
+
+Chart.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Legend
+);
 
 const Container = styled.div`
   position: fixed;
@@ -41,123 +50,114 @@ const TextBox = styled.div`
   }
 `
 const Stats = styled.div`
+  flex: 1;
 `
 
 function HelpBar() {
-  const [chartData, setChartData] = useState(null);
   const [userData, setUserData] = useState({
-    userName: '',
-    todayCal: '',
-    basalMetabolic: '',
-    morningCal: '',
-    lunchCal: '',
-    dinnerCal: '',
-    weight: '',
-    targetWeight: '',
+  userName: '',
+  todayCal: '',
+  basalMetabolic: '',
+  morningCal: '',
+  lunchCal: '',
+  dinnerCal: '',
+  weight: '',
+  targetWeight: '',
   });
 
-  useEffect(() => {
-    fetchDataFromServer()
-      .then(data => {
-        setUserData({
-          userName: data.username,
-          todayCal: data.todayCal,
-          basalMetabolic: data.basalMetabolic,
-          morningCal: data.morningCal,
-          lunchCal: data.lunchCal,
-          dinnerCal: data.dinnerCal,
-          weight: data.weight,
-          targetWeight: data.targetWeight,
-        });
-        setChartData({
-          labels: ['아침', '점심', '저녁'],
-          datasets: [
-            {
-              label: '아침',
-              backgroundColor: 'rgba(75, 192, 192, 0.4)',
-              borderColor: 'rgba(75,192,192,1)',
-              borderWidth: 1,
-              hoverBackgroundColor: 'rgba(75,192,192,0.6)',
-              hoverBorderColor: 'rgba(75,192,192,1)',
-              data: [data.morningCal],
-            },
-            {
-              label: '점심',
-              backgroundColor: 'rgba(255, 205, 86, 0.4)',
-              borderColor: 'rgba(255, 205, 86, 1)',
-              borderWidth: 1,
-              hoverBackgroundColor: 'rgba(255, 205, 86, 0.6)',
-              hoverBorderColor: 'rgba(255, 205, 86, 1)',
-              data: [data.lunchCal],
-            },
-            {
-              label: '저녁',
-              backgroundColor: 'rgba(255, 99, 132, 0.4)',
-              borderColor: 'rgba(255,99,132,1)',
-              borderWidth: 1,
-              hoverBackgroundColor: 'rgba(255,99,132,0.6)',
-              hoverBorderColor: 'rgba(255,99,132,1)',
-              data: [data.dinnerCal],
-            },
-          ],
-        });
-      })
-      .catch(error => {
-        console.error('데이터를 불러오는데 실패했습니다.', error);
+useEffect(() => {
+  fetchDataFromServer()
+  .then(data => {
+      setUserData({
+      userName: data.helpbar_info.name[0],
+      todayCal: data.helpbar_info.total_calories,
+      basalMetabolic: data.helpbar_info.basal_meta[0],
+      morningCal: data.helpbar_info.calories_per_meal.breakfast,
+      lunchCal: data.helpbar_info.calories_per_meal.lunch,
+      dinnerCal: data.helpbar_info.calories_per_meal.dinner,
+      weight: data.helpbar_info.user_weight,
+      targetWeight: data.helpbar_info.user_goal_weight,
       });
-  }, []);
+  })
+  .catch(error => {
+      console.error('데이터를 불러오는데 실패했습니다.', error);
+  });
+}, []);
 
-  const fetchDataFromServer = async () => {
-    try {
-      const response = await fetch('/your-server-endpoint');
-      const data = await response.json();
+const fetchDataFromServer = async () => {
+  try {
+  const response = await fetch('http://3.112.14.157:5000/user/planner');
+  const data = await response.json();
+  
+  return data;
+  } catch (error) {
+  throw new Error('데이터를 불러오는데 실패했습니다.');
+  }
+};
 
-      return data;
-    } catch (error) {
-      throw new Error('데이터를 불러오는데 실패했습니다.');
-    }
-  };
+const weightDifference = userData.targetWeight - userData.weight;
+let action = '유지';
+if (weightDifference > 0) {
+  action = '증량';
+} else if (weightDifference < 0) {
+  action = '감량';
+};
 
-  const weightDifference = userData.targetWeight - userData.weight;
-  let action = '유지';
-  if (weightDifference > 0) {
-    action = '증량';
-  } else if (weightDifference < 0) {
-    action = '감량';
-  };
+let recommendCalories = userData.basalMetabolic;
+if (action === '증량') {
+  recommendCalories += 500;
+} else if (action === '감량') {
+  recommendCalories -= 500;
+};
 
-  let recommendCalories = userData.basalMetabolism;
-  if (action === '증량') {
-    recommendCalories += 500;
-  } else if (action === '감량') {
-    recommendCalories -= 500;
-  };
+const recCal = Math.round(recommendCalories);
 
-  return (
-    <Container>
-      <h2><Logo/></h2>
-      <TextBox>
-        <div>
-          <h1><span>{userData.userName}</span>님,</h1>
-          <h3>오늘 {userData.todayCal}kcal 섭취했어요!</h3>
-          <h5>남은 칼로리는 {recommendCalories - userData.todayCal}kcal입니다.</h5>
-        </div>
-      </TextBox>
-      <Stats>
-        {chartData && (
-          <Bar
-            data={chartData}
-            options={{
-              scales: {
-                x: {beginAtZero: true},
-                y: {beginAtZero: true, max: userData.recommendCalories / 3},
-              },
-            }}
-          />
-        )}
-      </Stats>
-    </Container>
-  );
+const Percentage = (actual) => {
+  const recommended = recCal / 3;
+  return Math.min((actual / recommended) * 100, 100);
+};
+
+const chartData = [
+  {
+      name: '아침',
+      actual: Percentage(userData.morningCal),
+      recommended: 100,
+  },
+  {
+      name: '점심',
+      actual: Percentage(userData.morningCal),
+      recommended: 100,
+  },
+  {
+      name: '저녁',
+      actual: Percentage(userData.morningCal),
+      recommended: 100, 
+  },
+];
+
+
+return (
+  <Container>
+  <h2><Logo/></h2>
+  <TextBox>
+      <div>
+      <h1><span>{userData.userName}</span>님,</h1>
+      <h3>오늘 {userData.todayCal}kcal 섭취했어요!</h3>
+      <h5>남은 칼로리는 {recCal - userData.todayCal}kcal입니다.</h5>
+      </div>
+  </TextBox>
+  <Stats>
+      <ResponsiveContainer width="100%" height={250} >
+      <BarChart data={chartData} layout="vertical" >
+          <XAxis type="number" domain={[0, 100]} hide />
+          <YAxis dataKey="name" type="category" tickLine={false} axisLine={false} />
+          <Bar dataKey="recommended" fill="#FFFFFF" radius={10} barSize={20}/>
+          <Bar dataKey="actual" fill="#FF9A23" radius={10} barSize={20}/>
+      </BarChart>
+      </ResponsiveContainer>
+  </Stats>
+  </Container>
+);
 };
 
 export default HelpBar;

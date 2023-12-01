@@ -22,11 +22,11 @@ const Text = styled.div`
     font-weight: 500;
   }
 `
-const Change = styled(Link)`
-  color: #F3B04D;
-  font-size: 18px;
-  font-weight: 500;
-`
+// const Change = styled(Link)`
+//   color: #F3B04D;
+//   font-size: 18px;
+//   font-weight: 500;
+// `
 const ContentBox = styled.div`
   display: flex;
   justify-content: space-between;
@@ -40,11 +40,32 @@ const ContentBox = styled.div`
 `
 
 function Profile({name, age, weight, height, gender, active}) {
+  const getGenderText = (gender) => {
+    return gender === 1 ? "남성" : gender === 2 ? "여성" : "";
+  };
+
+  const getActiveText = (active) => {
+    switch (active) {
+      case 1:
+        return "거의 앉아서 일함";
+      case 2:
+        return "적은 활동량";
+      case 3:
+        return "평균적인 활동량";
+      case 4:
+        return "많은 활동량";
+      case 5:
+        return "아주 많은 활동량";
+      default:
+        return "";
+    }
+  };
+
   return (
     <Container>
       <Text>
         <h2>프로필</h2>
-        <Change to="#!">수정</Change>
+        {/* <Change to="#!">수정</Change> */}
       </Text>
       <ContentBox>
         <span>이름</span>
@@ -64,11 +85,11 @@ function Profile({name, age, weight, height, gender, active}) {
       </ContentBox>
       <ContentBox>
         <span>성별</span>
-        <span>{gender}</span>
+        <span>{getGenderText(gender)}</span>
       </ContentBox>
       <ContentBox>
         <span>활동량</span>
-        <span>{active}</span>
+        <span>{getActiveText(active)}</span>
       </ContentBox>
     </Container>
   );

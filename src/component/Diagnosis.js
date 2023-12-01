@@ -45,16 +45,17 @@ function Diagnosis({weight, targetWeight, basalMetabolism}) {
     recommendCalories -= 500;
   };
 
-  const carb = (recommendCalories * 0.5) / 4;
-  const protein = (recommendCalories * 0.3) / 4;
-  const fat = (recommendCalories * 0.2) / 9;
+  const recCal = Math.round(recommendCalories);
+  const carb = Math.round((recommendCalories * 0.5) / 4);
+  const protein = Math.round((recommendCalories * 0.3) / 4);
+  const fat = Math.round((recommendCalories * 0.2) / 9);
 
   return ( 
     <Container>
       <Text>진단</Text>
       <ContentBox>
         <span>권장 섭취 칼로리</span>
-        <span>{recommendCalories}kcal</span>
+        <span>{recCal}kcal</span>
       </ContentBox>
       <ContentBox>
         <span>탄수화물</span>

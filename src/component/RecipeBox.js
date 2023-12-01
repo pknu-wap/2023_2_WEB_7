@@ -1,33 +1,57 @@
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
 
+const FoodName = styled.h3`
+  color: #6A3900;
+  font-family: Noto Sans KR;
+  font-size: 17px;
+  font-weight: 700;
+  padding: 5px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  position: relative;
+`
 const Container = styled.div`
-  width: 265px;
+  display: flex;
+  flex-direction: column;
+  width: 280px;
   height: 390px;
   background-color: #FFFFFF;
   padding: 10px 14px;
+
+  // &:hover {
+  // ${FoodName} {
+  //   animation: marquee 5s linear infinite;
+  // }
+  // }
+
+  // @keyframes marquee {
+  // 0% {
+  //   transform: translateX(100%);
+  // }
+  // 100% {
+  //   transform: translateX(-100%);
+  // }
 `
 const FoodImg = styled.div`
   background-image: url('${props => props.imageUrl}');
   background-repeat: no-repeat;
   background-position: center;
   background-size: cover;
+  width: 100%;
+  height: 272px;
 `
-const FoodName = styled.h3`
-  color: #6A3900;
-  font-family: Noto Sans KR;
-  font-size: 20px;
-  font-weight: 700;
-`
+
 const ButtonBox = styled.div`
   display: flex;
   justify-content: space-between;
   font-family: Noto Sans KR;
   font-size: 15px;
   font-weight: 500;
+  margin-top: auto;
 `
-const ReadMore = styled(Link)`
-  width: 136px;
+const ReadMore = styled.div`
+  width: 145px;
   height: 42px;
   background-color: #F3B04D;
   color: #FFFFFF;
@@ -35,9 +59,13 @@ const ReadMore = styled(Link)`
   justify-content: center;
   align-items: center;
   text-decoration: none;
+
+  &:hover {
+    cursor: pointer;
+  }
 `
 const Registration = styled(Link)`
-  width: 86px;
+  width: 100px;
   height: 42px;
   background-color: #FF9A23;
   color: #FFFFFF;
@@ -47,19 +75,19 @@ const Registration = styled(Link)`
   text-decoration: none;
 `
 
-function RecipeBox({ recipeUrl, recipeName, recipeId }) {
+function RecipeBox({ recipeImg, recipeName, recipeId }) {
   const navigate = useNavigate();
 
-  const handleReadMoreCick = () => {
+  const handleReadMoreClick = () => {
     navigate(`/recipe/${recipeId}`);
   };
 
   return (
     <Container>
-      {/* <FoodImg imageUrl={imageUrl}/> */}
+      <FoodImg imageUrl={recipeImg}/>
       <FoodName>{recipeName}</FoodName>
       <ButtonBox>
-        <ReadMore onClick={handleReadMoreCick}>자세히 보기</ReadMore>
+        <ReadMore onClick={handleReadMoreClick}>자세히 보기</ReadMore>
         <Registration to="#!">등록</Registration>
       </ButtonBox>
     </Container>

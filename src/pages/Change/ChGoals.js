@@ -119,7 +119,7 @@ function ChGoals() {
           />
         </TargetWeight>
         <Link to="/join3">이전</Link>
-        <button onClick={handleNextClick}>가입하기</button>
+        <button onClick={handleNextClick}>수정하기</button>
       </Container>
     </LoginBackground>
   );

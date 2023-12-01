@@ -14,22 +14,26 @@ const Container = styled.div`
   font-weight: 300;
   position: relative;
   padding: 85px 109px 0px 85px;
+`
+const LoginButton = styled.button`
+  position: absolute;
+  right: 109px;
+  bottom: 40px;
+  width: 110px;
+  height: 55px;
+  border-radius: 12px;
+  border: none;
+  background-color: #F3B04D;
+  text-decoration: none;
+  text-align: center;
+  color: #FFFFFF;
+  font-family: Noto Sans KR;
+  font-size: 18px;
+  font-weight: 500;
+  padding: 15px 30px;
 
-  a {
-    position: absolute;
-    right: 109px;
-    bottom: 40px;
-    width: 110px;
-    height: 55px;
-    border-radius: 12px;
-    background-color: #F3B04D;
-    text-decoration: none;
-    text-align: center;
-    color: #FFFFFF;
-    font-family: Noto Sans KR;
-    font-size: 18px;
-    font-weight: 500;
-    padding: 15px 30px;
+  &:hover {
+    cursor: pointer;
   }
 `
 const Title = styled.h2`
@@ -129,7 +133,7 @@ function Login() {
     if (!idError&&!passwordError) {
       setidError('\t');
       setPasswordError('\t');
-      fetch('/user/login', {
+      fetch('http://3.112.14.157:5000/user/login', {
         method: 'POST',
         body: JSON.stringify({id, password}),
         headers: {
@@ -139,7 +143,7 @@ function Login() {
         
         .then((response) => {
           if (response.ok) {
-            navigate('/next-page.html');
+            navigate('/main');
           } else {
             console.log('서버 요청 실패');
             alert('가입된 회원정보가 없습니다.');
@@ -200,7 +204,7 @@ function Login() {
           />
           {passwordError && <span>{passwordError}</span>}
         </PassWord>
-        <Link to="/next-page.html" onClick={handleNextClick}>로그인</Link>
+        <LoginButton onClick={handleNextClick}>로그인</LoginButton>
       </Container>
     </LoginBackground>
   );

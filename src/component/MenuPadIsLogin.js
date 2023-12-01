@@ -116,7 +116,7 @@ const MenuBox = styled(Link)`
   }
 `
 
-function MenuPad() {
+function MenuPadIsLogin() {
   return (
     <Background>
       <BackCircle>
@@ -127,19 +127,19 @@ function MenuPad() {
         </Circle2>
       </BackCircle>
       <MenuContainer>
-        <MenuBox to="join1">
+        <MenuBox to="/refrigerator">
           <img src="https://images.unsplash.com/photo-1466637574441-749b8f19452f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2080&q=80" alt="냉장고"/>
           <span>냉장고</span>
         </MenuBox>
-        <MenuBox to="/join1">
+        <MenuBox to="/planner">
           <img src="https://images.unsplash.com/photo-1529651737248-dad5e287768e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1965&q=80" alt="식단"/>
-          <span>플래너</span>
+          <span>식단</span>
         </MenuBox>
-        <MenuBox to="/join1">
+        <MenuBox to="/report">
           <img src="https://images.unsplash.com/photo-1634117622592-114e3024ff27?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1925&q=80" alt="리포트"/>
           <span>리포트</span>
         </MenuBox>
-        <MenuBox to="/join1">
+        <MenuBox to="/mypage">
           <img src="https://images.unsplash.com/photo-1470790376778-a9fbc86d70e2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2008&q=80" alt="마이페이지"/>
           <span>마이페이지</span>
         </MenuBox>
@@ -149,4 +149,4 @@ function MenuPad() {
   );
 };
 
-export default MenuPad;
+export default MenuPadIsLogin;
