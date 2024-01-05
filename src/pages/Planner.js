@@ -556,7 +556,7 @@ function Planner() {
       };
 
 
-      await axios.post(`/mealrecords/${formattedDate}`, mealUpdateData);
+      await axios.post(`http://3.112.14.157:5000/user/mealrecords/${formattedDate}`, mealUpdateData);
       console.log('음식 삭제 성공');
     } catch (error) {
       console.error('음식 삭제 실패', error);

@@ -133,7 +133,7 @@ function MenuPadIsLogin() {
         </MenuBox>
         <MenuBox to="/planner">
           <img src="https://images.unsplash.com/photo-1529651737248-dad5e287768e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1965&q=80" alt="식단"/>
-          <span>식단</span>
+          <span>플래너</span>
         </MenuBox>
         <MenuBox to="/report">
           <img src="https://images.unsplash.com/photo-1634117622592-114e3024ff27?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1925&q=80" alt="리포트"/>

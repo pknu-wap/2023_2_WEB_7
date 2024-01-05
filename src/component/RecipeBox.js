@@ -88,7 +88,7 @@ function RecipeBox({ recipeImg, recipeName, recipeId }) {
       <FoodName>{recipeName}</FoodName>
       <ButtonBox>
         <ReadMore onClick={handleReadMoreClick}>자세히 보기</ReadMore>
-        <Registration to="#!">등록</Registration>
+        <Registration to="/planner">등록</Registration>
       </ButtonBox>
     </Container>
   );
